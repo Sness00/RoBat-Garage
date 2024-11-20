@@ -61,7 +61,7 @@ usb_fireface_index = get_card(sd.query_devices())
 
 def callback_sine(indata, outdata, frames, time, status):
     outdata[:] = output_tone
-    all_input_data.put(indata)
+    all_input_data.put(indata.copy())
 
 # create a stream, and set the blocksize to match that of the output signal
 stream_inout = sd.Stream(samplerate = fs,
@@ -90,8 +90,9 @@ input_audio = np.concatenate(all_input_audio)
 #%%
 plt.figure()
 aa = plt.subplot(211) 
-# plt.specgram(input_audio[:, 3], Fs=fs, NFFT=1024, noverlap=512)    
+plt.specgram(input_audio[:, 3], Fs=fs, NFFT=1024, noverlap=512)    
 plt.subplot(212, sharex=aa)
 t_audio = np.linspace(0, input_audio.shape[0]/fs, input_audio.shape[0])
 plt.plot(t_audio, input_audio[:, 3])
 plt.show()
+# %%
