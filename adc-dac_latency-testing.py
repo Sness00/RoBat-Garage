@@ -95,4 +95,3 @@ plt.subplot(212, sharex=aa)
 t_audio = np.linspace(0, input_audio.shape[0]/fs, input_audio.shape[0])
 plt.plot(t_audio, input_audio[:, 3])
 plt.show()
-# %%

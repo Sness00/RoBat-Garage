@@ -38,7 +38,8 @@ def butter_lowpass_filter(data, cutoff, fs, order):
     normal_cutoff = cutoff / nyq
     # Get the filter coefficients 
     b, a = signal.butter(order, normal_cutoff, btype='low', analog=False)
-    y = signal.filtfilt(b, a, data)
+    sos = signal.tf2sos(b, a)
+    y = signal.sosfilt(sos, data)
     return y
 
 #%%
@@ -63,12 +64,12 @@ if __name__ == "__main__":
     # Stream callback function
     current_frame = 0
     def callback(indata, outdata, frames, time, status):
-        audio_in_data.put(indata.copy())
         global current_frame
         if status:
             print(status)
         chunksize = min(len(output_sig) - current_frame, frames)
         outdata[:chunksize] = output_sig[current_frame:current_frame + chunksize]
+        audio_in_data.put(indata.copy())
         if chunksize < frames:
             outdata[chunksize:] = 0
             raise sd.CallbackStop()
@@ -79,10 +80,11 @@ if __name__ == "__main__":
 
     # Create stream
     stream = sd.Stream(samplerate=fs,
-                       blocksize=2**12, 
+                       blocksize=0, 
                        device=get_soundcard_iostream(sd.query_devices()), 
                        channels=(8, 1),
-                       callback=callback)
+                       callback=callback,
+                       latency='low')
     
     # Little pause to let the soundcard settle
     time.sleep(0.5)
@@ -101,45 +103,68 @@ if __name__ == "__main__":
     rec_audio = input_audio[0:len(carrier), 2]
 
     # Demodulate recorded audio
-    demod_audio = butter_lowpass_filter(rec_audio * carrier, 48000, fs, 4)
+    demod_audio = butter_lowpass_filter(2 * rec_audio * carrier, 48000, fs, 1)
 #%%
     # Cross correlate recorded audio and test audio and find its absolute maximum as an estimate of audio latency
+    cc_mod = signal.correlate(rec_audio, mod_sig, 'full')
+    cc_mod_max_idx = np.argmax(np.abs(cc_mod)) - len(carrier)
+    lag_mod = (cc_mod_max_idx) / fs*1000
+    print('Estimated latency from modulated signals:', lag_mod, '[ms]')
+    
     cc = signal.correlate(demod_audio, x, 'full')
     cc_max_idx = np.argmax(np.abs(cc)) - len(carrier)
     lag = (cc_max_idx) / fs*1000
-    print('Estimated latency:', lag, '[ms]')
+    print('Estimated latency from demodulated signals:', lag, '[ms]')
 
     # Print cross correlation magnitude
-    plt.figure()
-    plt.plot(np.abs(cc))
-    plt.show()
+    # plt.figure()
+    # plt.subplot(121)
+    # plt.plot(np.abs(cc_mod))
+    # plt.subplot(122)
+    # plt.plot(np.abs(cc))
+    # plt.show()
 
 #%%
     # Print test audio and demodulated audio
     plt.figure()
-    aa = plt.subplot(211) 
+    aa = plt.subplot(311) 
     plt.plot(t, x)
     plt.title('Original Signal')
-    plt.subplot(212, sharex=aa, sharey=aa)
+    plt.subplot(313, sharex=aa, sharey=aa)
     plt.plot(t, demod_audio)
+    plt.title('Demodulated Signal')
+    plt.subplot(312, sharex=aa, sharey=aa)
+    plt.plot(t, rec_audio)
     plt.title('Recorded Signal')
     plt.tight_layout()
     plt.show()
+
 #%%
     # Zoom in on signals
     time_zoomed = np.array([2.72, 2.9])
     idx_zoomed = np.int32(time_zoomed * fs)
     
-    plt.figure()
+    plt.figure(1)
     p1 = plt.subplot(211)
     p1.title.set_text('Original Signal Zoom In')
     plt.plot(t[idx_zoomed[0]:idx_zoomed[1]], x[idx_zoomed[0]:idx_zoomed[1]])
     plt.grid('minor')
     p2 = plt.subplot(212, sharex=p1)
-    p2.title.set_text('Original Signal Zoom In')
-    plt.plot(t[idx_zoomed[0]:idx_zoomed[1]], -demod_audio[idx_zoomed[0]:idx_zoomed[1]])
+    p2.title.set_text('Demodulated Signal Zoom In')
+    plt.plot(t[idx_zoomed[0]:idx_zoomed[1]], demod_audio[idx_zoomed[0]:idx_zoomed[1]])
     plt.grid()
-    plt.title('Recorded signal zoom in')
+    plt.tight_layout()
+    plt.show()
+
+    plt.figure(2)
+    p1 = plt.subplot(211)
+    p1.title.set_text('Modulated Transmitted Signal Zoom In')
+    plt.plot(t[idx_zoomed[0]:idx_zoomed[1]], mod_sig[idx_zoomed[0]:idx_zoomed[1]])
+    plt.grid('minor')
+    p2 = plt.subplot(212, sharex=p1)
+    p2.title.set_text('Modulated Received Signal Zoom In')
+    plt.plot(t[idx_zoomed[0]:idx_zoomed[1]], rec_audio[idx_zoomed[0]:idx_zoomed[1]])
+    plt.grid()
     plt.tight_layout()
     plt.show()
 

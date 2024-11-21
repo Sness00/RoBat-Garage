@@ -54,31 +54,31 @@ if __name__ == "__main__":
     dur = len(sig) / fs
     t = np.linspace(0, dur, len(sig))
 
-    # plt.figure()
-    # plt.plot(t, sig)
-    # plt.show()
-
+    plt.figure()
+    plt.plot(t, sig)
+    plt.show()
+#%%
     recording_time = 0.1
     recording_samples = int(recording_time * fs)
 
     output_sig = np.float32(np.reshape(np.append(sig, np.zeros(recording_samples - len(sig), )), (-1, 1)))
-    chunk = 2**12
+    chunk = 0
     audio_in_data = queue.Queue()
     
     # Stream callback function
     current_frame = 0
     def callback(indata, outdata, frames, time, status):
-        audio_in_data.put(indata.copy())
         global current_frame
         if status:
             print(status)
         chunksize = min(len(output_sig) - current_frame, frames)
         outdata[:chunksize] = output_sig[current_frame:current_frame + chunksize]
+        audio_in_data.put(indata.copy())
         if chunksize < frames:
             outdata[chunksize:] = 0
             raise sd.CallbackStop()
         current_frame += chunksize
-
+        
     # Initialize and power on mics array
     start_mics()
 
@@ -87,7 +87,8 @@ if __name__ == "__main__":
                        blocksize=chunk, 
                        device=get_soundcard_iostream(sd.query_devices()), 
                        channels=(8, 1),
-                       callback=callback)
+                       callback=callback,
+                       latency='low')
     
     # Little pause to let the soundcard settle
     tm.sleep(0.5)
