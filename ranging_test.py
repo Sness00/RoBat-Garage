@@ -58,7 +58,7 @@ if __name__ == "__main__":
     # plt.plot(t, sig)
     # plt.show()
 #%%
-    recording_time = 0.5
+    recording_time = 0.05
     recording_samples = int(recording_time * fs)
 
     output_sig = np.float32(np.reshape(np.append(sig, np.zeros(recording_samples - len(sig), )), (-1, 1)))
@@ -89,12 +89,11 @@ if __name__ == "__main__":
                        device=get_soundcard_iostream(sd.query_devices()), 
                        channels=(8, 1),
                        callback=callback,
-                       latency=0.005)
+                       latency='low')
     
     # Little pause to let the soundcard settle
     tm.sleep(0.5)
 
-    # Run stream for 36 seconds, 35 for it to play the entire test audio, plus one more for good measure
     with stream:
         while stream.active:
             pass
@@ -125,48 +124,46 @@ if __name__ == "__main__":
     peaks = []
     min_length = 1000
     for en in energy_local:
-        idxs, _ = signal.find_peaks(en, prominence=0.35, wlen=int(len(sig)/2), distance=int(len(sig)/16))
+        idxs, _ = signal.find_peaks(en, prominence=14)
         if len(idxs) < min_length:
             min_length = len(idxs)
     
-    if min_length > 1:
-        for en in energy_local:
-            idxs, _ = signal.find_peaks(en, prominence=0.35, wlen=int(len(sig)/2), distance=int(len(sig)/16))
-            peaks.append(idxs[0:min_length])
+    for en in energy_local:
+        idxs, _ = signal.find_peaks(en, prominence=14)
+        peaks.append(idxs[0:min_length])
+    peaks_array = np.array(peaks)
 
-        peaks_array = np.array(peaks)
-        
+    if min_length > 1:       
         estimated_distances = []
         for i, p in enumerate(peaks):
             estimated_distances.append((p[1] - p[0])/fs*343.0/2)
             print('Estimated distance for channel', i, ':', '%.5f' % estimated_distances[i], '[m]')
-
-        t_plot = np.linspace(0, recording_time, int(fs*recording_time))
-        plt.figure()
-        aa = plt.subplot(221)
-        plt.plot(energy_local[0, :])
-        plt.vlines(peaks_array[0, :], 0, 100, linestyles='dashed', colors='r')
-        plt.title('Matched Filter Channel 3')
-        plt.grid()
-        plt.subplot(222, sharex=aa, sharey=aa)
-        plt.plot(energy_local[1, :])
-        plt.vlines(peaks_array[1, :], 0, 100, linestyles='dashed', colors='r')
-        plt.title('Matched Filter Channel 4')
-        plt.grid()
-        plt.subplot(223, sharex=aa, sharey=aa)
-        plt.plot(energy_local[2, :])
-        plt.vlines(peaks_array[2, :], 0, 100, linestyles='dashed', colors='r')
-        plt.title('Matched Filter Channel 7')
-        plt.grid()
-        plt.subplot(224, sharex=aa, sharey=aa)
-        plt.plot(energy_local[3, :])
-        plt.vlines(peaks_array[3, :], 0, 100, linestyles='dashed', colors='r')
-        plt.title('Matched Filter Channel 8')
-        plt.grid()
-        plt.tight_layout()
-        plt.show()
     else:
         print('Only', min_length, 'peaks found')
+    t_plot = np.linspace(0, recording_time, int(fs*recording_time))
+    plt.figure()
+    aa = plt.subplot(221)
+    plt.plot(energy_local[0, :])
+    plt.vlines(peaks_array[0, :], 0, 100, linestyles='dashed', colors='r')
+    plt.title('Matched Filter Channel 3')
+    plt.grid()
+    plt.subplot(222, sharex=aa, sharey=aa)
+    plt.plot(energy_local[1, :])
+    plt.vlines(peaks_array[1, :], 0, 100, linestyles='dashed', colors='r')
+    plt.title('Matched Filter Channel 4')
+    plt.grid()
+    plt.subplot(223, sharex=aa, sharey=aa)
+    plt.plot(energy_local[2, :])
+    plt.vlines(peaks_array[2, :], 0, 100, linestyles='dashed', colors='r')
+    plt.title('Matched Filter Channel 7')
+    plt.grid()
+    plt.subplot(224, sharex=aa, sharey=aa)
+    plt.plot(energy_local[3, :])
+    plt.vlines(peaks_array[3, :], 0, 100, linestyles='dashed', colors='r')
+    plt.title('Matched Filter Channel 8')
+    plt.grid()
+    plt.tight_layout()
+    plt.show()
 
     # plt.figure()
     # aa = plt.subplot(211)
