@@ -142,14 +142,18 @@ if __name__ == "__main__":
             valid_channels_audio = np.array([input_audio[:, 2], input_audio[:, 3], input_audio[:, 6], input_audio[:, 7]])
             distance = sonar(valid_channels_audio, sig)*100
             print('Estimated distance: %3.1f' % distance, '[cm]')
-            if distance < 10 and distance > 0:
+            if distance < 15 and distance > 0:
                 print('Encountered Obstacle')
-                while(time.time() - current_time) < 1:
-                    robot['motor.left.target'] = -150
-                    robot['motor.right.target'] = 150
-                robot['motor.left.target'] = 150
-                robot['motor.right.target'] = 150
-                current_time = time.time()
+                direction = random.choice(['l', 'r'])
+                if direction == 'l':
+                    while(time.time() - current_time) < 1:
+                        robot['motor.left.target'] = -150
+                        robot['motor.right.target'] = 150
+                else: 
+                    while(time.time() - current_time) < 1:
+                        robot['motor.left.target'] = 150
+                        robot['motor.right.target'] = -150
+                    current_time = time.time()
     except KeyboardInterrupt:
         robot['motor.left.target'] = 0
         robot['motor.right.target'] = 0
