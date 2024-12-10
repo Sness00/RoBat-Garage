@@ -123,8 +123,8 @@ if __name__ == "__main__":
         time.sleep(1)
         current_time = time.time()
         while True:
-            robot['motor.left.target'] = 250
-            robot['motor.right.target'] = 250
+            robot['motor.left.target'] = 200
+            robot['motor.right.target'] = 200
             stream = sd.Stream(samplerate=fs,
                        blocksize=0, 
                        device=device, 
@@ -142,11 +142,13 @@ if __name__ == "__main__":
             valid_channels_audio = np.array([input_audio[:, 2], input_audio[:, 3], input_audio[:, 6], input_audio[:, 7]])
             distance = sonar(valid_channels_audio, sig)*100
             print('Estimated distance: %3.1f' % distance, '[cm]')
-            if distance < 25 and distance > 0:
+            if distance < 10 and distance > 0:
                 print('Encountered Obstacle')
-                while(time.time() - current_time) < 1.5:
-                    robot['motor.left.target'] = -250
-                    robot['motor.right.target'] = 250
+                while(time.time() - current_time) < 1:
+                    robot['motor.left.target'] = -150
+                    robot['motor.right.target'] = 150
+                robot['motor.left.target'] = 150
+                robot['motor.right.target'] = 150
                 current_time = time.time()
     except KeyboardInterrupt:
         robot['motor.left.target'] = 0
