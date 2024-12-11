@@ -33,31 +33,28 @@ def get_soundcard_iostream(device_list):
         if asio_in_name:
             return (i, i)
         
-def butter_lowpass_filter(data, cutoff, fs, order):
-    nyq = fs/2
-    normal_cutoff = cutoff / nyq
-    # Get the filter coefficients 
-    b, a = signal.butter(order, normal_cutoff, btype='low', analog=False)
-    sos = signal.tf2sos(b, a)
-    y = signal.sosfilt(sos, data)
-    return y
-
+def pow_two_pad_and_window(vec, show=False):
+    window = signal.windows.hann(len(vec))
+    windowed_vec = vec * window
+    padded_windowed_vec = np.pad(windowed_vec, (0, 2**int(np.ceil(np.log2(len(windowed_vec)))) - len(windowed_vec)))
+    if show:
+        dur = len(padded_windowed_vec) / fs
+        t = np.linspace(0, dur, len(padded_windowed_vec))
+        plt.figure()
+        plt.plot(t, padded_windowed_vec)
+        plt.show()
+    return padded_windowed_vec/max(padded_windowed_vec)
 #%%
 if __name__ == "__main__":
 
     # Load and resample at 192kHz the test audio
     x, fs = librosa.load('./1-80k_3ms.wav', sr=192000)
-    dur = len(x) / fs
-    t = np.linspace(0, dur, len(x))
+    sig = pow_two_pad_and_window(x, show=False)
+    output_sig = np.pad(sig, (0, int(0.1*fs)))
+    dur = len(output_sig) / fs
 
-    # Modulate in ultrasonic band to exploit the transducer's frequency response
-    fc = 45e3
-    carrier = np.cos(2*np.pi*fc*t)
-    mod_sig = x * carrier
-    mod_sig = np.concatenate((x, x, x, x, x, x, x, x, x, x, x, x, x, x, x))
-    # Output signal
-    output_sig = np.float32(np.reshape(mod_sig, (-1, 1)))
-
+    output_sig = np.float32(np.reshape(output_sig, (-1, 1)))
+    
     # Queue to store incoming audio data
     audio_in_data = queue.Queue()
     
@@ -68,7 +65,6 @@ if __name__ == "__main__":
     current_frame = 0
     def callback(indata, outdata, frames, time, status):
         global current_frame
-        print(frames)
         if status:
             print(status)
         chunksize = min(len(output_sig) - current_frame, frames)
@@ -76,12 +72,12 @@ if __name__ == "__main__":
         audio_in_data.put(indata.copy())
         if chunksize < frames:
             outdata[chunksize:] = 0
-            # raise sd.CallbackStop()
+            raise sd.CallbackStop()
         current_frame += chunksize
 
     # Initialize and power on mics array
-    # start_mics()
-#%%
+    start_mics()
+
     # Create stream
     stream = sd.Stream(samplerate=fs,
                        blocksize=0, 
@@ -94,10 +90,9 @@ if __name__ == "__main__":
     # Little pause to let the soundcard settle
     time.sleep(0.5)
     # Run stream until playback stops
-    start_time = time.time()
     with stream:
         print('Stream started')
-        while (time.time() - start_time) < 0.020:
+        while stream.active:
             pass
         print('Stream ended')
     # Transfer input data from queue to an array
@@ -107,35 +102,27 @@ if __name__ == "__main__":
     input_audio = np.concatenate(all_input_audio)
 
     # Save channel 2 recorded audio, as a reference to work on. Also channels 3, 6 and 7 could work
-    rec_audio = input_audio[0:len(carrier), 2]
+    rec_audio = input_audio[:, 3].reshape(-1, 1)
+    if len(output_sig) > len(rec_audio):
+        output_sig = output_sig[0:len(rec_audio)]
+    elif len(output_sig) < len(rec_audio):
+        output_sig = np.pad(output_sig, ((0, len(rec_audio) - len(output_sig)), (0, 0)))
 
-    # Demodulate recorded audio
-    # demod_audio = butter_lowpass_filter(2 * rec_audio * carrier, 48000, fs, 1)
-
+#%%
     # Cross correlate recorded audio and test audio and find its absolute maximum as an estimate of audio latency
-    cc_mod = signal.correlate(rec_audio, mod_sig, 'full')
-    cc_mod_max_idx = np.argmax(np.abs(cc_mod)) - len(carrier)
+    cc_mod = signal.correlate(rec_audio, output_sig, 'full', method='fft')
+    cc_mod_max_idx = np.argmax(np.abs(cc_mod)) - len(output_sig)
     lag_mod = (cc_mod_max_idx) / fs*1000
-    print('Estimated latency from modulated signals:', lag_mod, '[ms]')
-    
-    # cc = signal.correlate(demod_audio, x, 'full')
-    # cc_max_idx = np.argmax(np.abs(cc)) - len(carrier)
-    # lag = (cc_max_idx) / fs*1000
-    # print('Estimated latency from demodulated signals:', lag, '[ms]')
+    print('Estimated latency:', lag_mod, '[ms]')
 
+    # Print test audio and demodulated audio32
+    # t = np.linspace(0, len(rec_audio)/fs, len(rec_audio))
     # plt.figure()
-    # plt.plot(np.abs(cc))
-
-    # Print test audio and demodulated audio
-    plt.figure()
-    aa = plt.subplot(311) 
-    plt.plot(mod_sig)
-    plt.title('Original Signal')
-    plt.subplot(313)
-    # plt.plot(t, demod_audio)
-    # plt.title('Demodulated Signal')
-    plt.subplot(312)
-    plt.plot(t, rec_audio)
-    plt.title('Recorded Signal')
-    plt.tight_layout()
-    plt.show()
+    # aa = plt.subplot(211) 
+    # plt.plot(t, output_sig)
+    # plt.title('Original Signal')
+    # plt.subplot(212)
+    # plt.plot(t, rec_audio)
+    # plt.title('Recorded Signal')
+    # plt.tight_layout()
+    # plt.show()
