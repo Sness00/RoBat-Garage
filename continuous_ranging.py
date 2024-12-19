@@ -1,4 +1,3 @@
-#%%
 import matplotlib.pyplot as plt
 import sounddevice as sd
 import numpy as np 
@@ -58,8 +57,9 @@ def moving_average(vec, length, w_len=3):
 def sonar(signals, output_sig, w_len=32):
     obst_distance = 0
     for s in signals:
-        filtered_signal = np.abs(signal.correlate(s, output_sig, 'same', method='fft'))**2
-        smoothed_signal = moving_average(filtered_signal, length=filtered_signal.size, w_len=3)
+        filtered_signal = np.abs(signal.correlate(s, output_sig, 'same', method='fft')).transpose()
+        smoothed_signal = np.abs(signal.hilbert(filtered_signal, axis=0))
+        # smoothed_signal = moving_average(filtered_signal, length=filtered_signal.size, w_len=3)
         # smoothed_signal = filtered_signal
         # filt_padded_signal = np.pad(filtered_signal, (w_len//2, w_len//2))
         # energy_local = np.zeros(filtered_signal.shape)
@@ -130,7 +130,7 @@ if __name__ == "__main__":
                        device=device, 
                        channels=(8, 1),
                        callback=callback,
-                       latency='low')
+                       latency=0.005)
             with stream:
                 while stream.active:
                     pass
@@ -142,7 +142,7 @@ if __name__ == "__main__":
             valid_channels_audio = np.array([input_audio[:, 2], input_audio[:, 3], input_audio[:, 6], input_audio[:, 7]])
             distance = sonar(valid_channels_audio, sig)*100
             print('Estimated distance: %3.1f' % distance, '[cm]')
-            if distance < 15 and distance > 0:
+            if distance < 20 and distance > 0:
                 print('Encountered Obstacle')
                 direction = random.choice(['l', 'r'])
                 if direction == 'l':
