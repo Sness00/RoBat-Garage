@@ -87,7 +87,7 @@ if __name__ == "__main__":
                        device=get_soundcard_iostream(sd.query_devices()), 
                        channels=(8, 1),
                        callback=callback,
-                       latency='low'
+                       latency=0.005
                        )
     
     # Little pause to let the soundcard settle

@@ -9,22 +9,9 @@ import os
 from thymiodirect import Connection 
 from thymiodirect import Thymio
 import random
+from broadcast_pcmd3180 import activate_mics
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
-
-def start_mics():
-    with SMBus(1) as bus:
-        if bus.read_byte_data(int('4E', 16), int('75', 16)) != int('60', 16):
-            bus.write_byte_data(int('4E', 16), int('2', 16), int('81', 16))
-            time.sleep(1e-3)
-            bus.write_byte_data(int('4E', 16), int('7', 16), int('60', 16))
-            bus.write_byte_data(int('4E', 16), int('B', 16), int('0', 16))
-            bus.write_byte_data(int('4E', 16), int('C', 16), int('20', 16))
-            bus.write_byte_data(int('4E', 16), int('22', 16), int('41', 16))
-            bus.write_byte_data(int('4E', 16), int('2B', 16), int('40', 16))
-            bus.write_byte_data(int('4E', 16), int('73', 16), int('C0', 16))
-            bus.write_byte_data(int('4E', 16), int('74', 16), int('C0', 16))
-            bus.write_byte_data(int('4E', 16), int('75', 16), int('60', 16))
 
 def get_soundcard_iostream(device_list):
     for i, each in enumerate(device_list):
@@ -48,32 +35,14 @@ def pow_two_pad_and_window(vec, show=False):
 def pow_two(vec):
     return np.pad(vec, (0, 2**int(np.ceil(np.log2(len(vec)))) - len(vec)))
 
-def moving_average(vec, length, w_len=3):
-    avg = np.zeros_like(vec)
-    for i in np.arange(0, length - w_len):
-        avg[i] = np.sum(vec[i:i+w_len])/w_len
-    return avg
-
-def sonar(signals, output_sig, w_len=32):
+def sonar(signals, output_sig):
     obst_distance = 0
     for s in signals:
-        filtered_signal = np.abs(signal.correlate(s, output_sig, 'same', method='fft')).transpose()
-        smoothed_signal = np.abs(signal.hilbert(filtered_signal, axis=0))
-        # smoothed_signal = moving_average(filtered_signal, length=filtered_signal.size, w_len=3)
-        # smoothed_signal = filtered_signal
-        # filt_padded_signal = np.pad(filtered_signal, (w_len//2, w_len//2))
-        # energy_local = np.zeros(filtered_signal.shape)
-        # for j in np.arange(filtered_signal.size):
-        #     energy_local[j] = np.sum(filt_padded_signal[j : j + w_len] * win)
-        # peaks, _ = signal.find_peaks(energy_local, prominence=100)
-
-        peaks, _ = signal.find_peaks(smoothed_signal, prominence=10, distance=int(len(sig)/64))
-        # plt.figure()
-        # plt.plot(filtered_signal)
-        # plt.vlines(peaks, 0, 1000, colors='r', linestyles='dashed')
-        # plt.show()
+        filtered_signal = signal.correlate(s, output_sig, 'same', method='fft').transpose()
+        smoothed_signal = np.abs(signal.hilbert(filtered_signal))
+        peaks, _ = signal.find_peaks(smoothed_signal, prominence=7)
         if len(peaks) > 1:
-            obst_distance += (peaks[1] - peaks[0])/fs*343/2
+            obst_distance += (peaks[1] - peaks[0])/fs*343/2 + 0.0325
         else:
             print('Skipped frame')
             return 0
@@ -109,7 +78,6 @@ if __name__ == "__main__":
             raise sd.CallbackAbort()
         current_frame += chunksize
 
-    start_mics()
     device = get_soundcard_iostream(sd.query_devices())
     try:
         # real robot
@@ -119,12 +87,15 @@ if __name__ == "__main__":
         th.connect()
         robot = th[th.first_node()]
 
+        speed = 0
+        rot_speed = 100
         # Delay to allow robot initialization of all variables
         time.sleep(1)
         current_time = time.time()
+        activate_mics()
         while True:
-            robot['motor.left.target'] = 200
-            robot['motor.right.target'] = 200
+            robot['motor.left.target'] = speed
+            robot['motor.right.target'] = speed
             stream = sd.Stream(samplerate=fs,
                        blocksize=0, 
                        device=device, 
@@ -139,21 +110,24 @@ if __name__ == "__main__":
             while not audio_in_data.empty():
                 all_input_audio.append(audio_in_data.get())            
             input_audio = np.concatenate(all_input_audio)
-            valid_channels_audio = np.array([input_audio[:, 2], input_audio[:, 3], input_audio[:, 6], input_audio[:, 7]])
+            valid_channels_audio = input_audio.transpose()
+
             distance = sonar(valid_channels_audio, sig)*100
+
             print('Estimated distance: %3.1f' % distance, '[cm]')
+
             if distance < 20 and distance > 0:
                 print('Encountered Obstacle')
                 direction = random.choice(['l', 'r'])
-                if direction == 'l':
-                    while(time.time() - current_time) < 1:
-                        robot['motor.left.target'] = -150
-                        robot['motor.right.target'] = 150
-                else: 
-                    while(time.time() - current_time) < 1:
-                        robot['motor.left.target'] = 150
-                        robot['motor.right.target'] = -150
-                    current_time = time.time()
+                while(time.time() - current_time) < 1:
+                    if direction == 'l':
+                        robot['motor.left.target'] = -rot_speed
+                        robot['motor.right.target'] = rot_speed
+                    else:
+                        robot['motor.left.target'] = rot_speed
+                        robot['motor.right.target'] = -rot_speed
+                current_time = time.time()
+    
     except KeyboardInterrupt:
         robot['motor.left.target'] = 0
         robot['motor.right.target'] = 0
