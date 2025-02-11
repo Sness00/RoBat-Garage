@@ -28,5 +28,5 @@ sounddevice==0.5.1
 soundfile==0.12.1
 soxr==0.5.0.post1
 threadpoolctl==3.5.0
-thymiodirect==0.1.2
+thymiodirect @ git+https://github.com/epfl-mobots/thymio-python@6c0ae84924bc45ad959c02c8ffd4fe0524e6f683
 urllib3==2.2.3

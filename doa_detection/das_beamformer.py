@@ -1,10 +1,8 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from scipy.io import wavfile
-from scipy.signal.windows import hann
+from scipy.signal import stft
 
 def das_filter(y, fs, nch, theta, c, d):
-    spectrum, t_spec_axis, f_spec_axis = my_stft(y, fs, nch, 1)
+    t_spec_axis, f_spec_axis, spectrum = stft(y, fs=fs, nperseg=256, noverlap=255, axis=0)
     bands = f_spec_axis[2::4]
     a = np.zeros((nch, len(theta), len(bands)), dtype=complex)
     cov_est = np.zeros((nch, nch, len(bands)), dtype=complex)
