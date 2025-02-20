@@ -1,14 +1,14 @@
+import os
 import matplotlib.pyplot as plt
 import sounddevice as sd
 import numpy as np 
 import scipy.signal as signal
-import scipy.fft as fft
 import queue
 import time
-from broadcast_pcmd3180 import activate_mics
-from das_filter import das_filter
-from continuous_ranging import sonar
-from das_v2 import das_filter_v2
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+from capon import capon_method
 
 def get_soundcard_iostream(device_list):
     for i, each in enumerate(device_list):
@@ -43,14 +43,12 @@ if __name__ == "__main__":
     chirp = signal.chirp(t_tone, hi_freq, t_tone[-1], low_freq)    
     sig = pow_two_pad_and_window(chirp, fs, show=False)
 
-    silence_dur = 10 # [ms]
+    silence_dur = 15 # [ms]
     silence_samples = int(silence_dur * fs/1000)
     silence_vec = np.zeros((silence_samples, ))
     full_sig = pow_two(np.concatenate((sig, silence_vec)))
-    # full_sig = np.concatenate((sig, silence_vec))
-    stereo_sig = np.hstack([full_sig.reshape(-1, 1), full_sig.reshape(-1, 1)])
 
-    output_sig = np.float32(stereo_sig)
+    output_sig = np.float32(np.reshape(full_sig, (-1, 1)))
 
     audio_in_data = queue.Queue()
 
@@ -67,13 +65,12 @@ if __name__ == "__main__":
             raise sd.CallbackAbort()
         current_frame += chunksize
 
-    activate_mics()
     soundcard = get_soundcard_iostream(sd.query_devices())
 
     stream = sd.Stream(samplerate=fs,
                        blocksize=0, 
                        device=soundcard, 
-                       channels=(8, 2),
+                       channels=(8, 1),
                        callback=callback,
                        latency='low')
     
@@ -99,65 +96,16 @@ if __name__ == "__main__":
 
         peaks = []
         for e in envelopes.T:
-            p, _ = signal.find_peaks(e, prominence=6)
+            p, _ = signal.find_peaks(e, prominence=12)
             peaks.append(p[0])
 
         furthest_peak = np.max(peaks)
 
-        fig, axs = plt.subplots(8, 1, sharex=True, sharey=True)
-        peaks_array = np.array(peaks)
-        for i in range(8):
-            axs[i].plot(filtered_signals[:, i])
-            axs[i].vlines(np.array([furthest_peak, furthest_peak+70]), ymin=-20, ymax=20, colors='red')
-            axs[i].set_title('Matched Filter Channel %d' % (i+1))
-            axs[i].grid(True)
-
-        theta2, p_das2 = das_filter_v2(filtered_signals[furthest_peak+70:4000, ], fs=fs, nch=filtered_signals.shape[1], d=0.003, bw=(low_freq, hi_freq))
+        theta2, p_capon = capon_method(filtered_signals[furthest_peak+70:furthest_peak+70+384, ], fs=fs, nch=filtered_signals.shape[1], d=0.003, bw=(low_freq, hi_freq))
         
         plt.figure()
-        plt.plot(theta2, p_das2)
+        plt.plot(theta2, p_capon)
         plt.grid()
         plt.title('Fast Implementation')
         plt.tight_layout()
         plt.show()
-
-        # RecSignals = fft.fft(input_audio, n=2**int(np.ceil(np.log2(len(input_audio)))), axis=0)
-
-        # FiltSignals = fft.fft(filtered_signals, n=2**int(np.ceil(np.log2(len(filtered_signals)))), axis=0)
-
-        # freqRS = np.arange(0, len(RecSignals)//2) * fs/2/(len(RecSignals)//2) 
-        # freqFS = np.arange(0, len(FiltSignals)//2) * fs/2/(len(FiltSignals)//2)
-
-        # peaks, _ = signal.find_peaks(envelopes, prominence=8)
-        # t_rs = np.linspace(0, input_audio.shape[0]/fs, input_audio.shape[0])
-        # t_fs = np.linspace(0, filtered_signals.shape[0]/fs, filtered_signals.shape[0])
-        # plt.figure()
-        # plt.subplot(411)
-        # plt.specgram(input_audio[:, 0], NFFT=128, Fs=fs, noverlap=64)
-        # plt.title('Recorded Signal Spectrogram')
-        # plt.subplot(412)
-        # plt.plot(input_audio[:, 0])
-        # plt.grid()
-        # plt.title('Recorded Signal Time History')
-        # plt.subplot(413)
-        # plt.specgram(filtered_signals[:, 0], NFFT=128, Fs=fs, noverlap=64)
-        # plt.title('Matched Filter Signal Spectrogram')
-        # plt.subplot(414)
-        # plt.plot(filtered_signals[:, 0])
-        # plt.grid()
-        # plt.title('Matched Filtered Signal Time History')
-        # plt.tight_layout()
-        # plt.show()
-
-        # plt.figure()
-        # plt.subplot(121)
-        # plt.plot(freqRS, np.abs(RecSignals[0:len(RecSignals)//2, 0]))
-        # plt.grid()
-        # plt.title('Recorded Signal Spectrum Amplitude')
-        # plt.subplot(122)
-        # plt.plot(freqFS, np.abs(FiltSignals[0:len(FiltSignals)//2, 0]))
-        # plt.grid()
-        # plt.title('Matched Filtered Signal Spectrum Amplitude')
-        # plt.tight_layout()
-        # plt.show()
-    

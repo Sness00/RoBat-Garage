@@ -1,9 +1,16 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Feb 20 17:07:50 2025
+
+@author: gabri
+"""
+
 import numpy as np
 from scipy.signal import stft
 
-def das_filter_v2(y, fs, nch, d, bw, theta=np.linspace(-90, 90, 73), c=343):    
+def capon_method(y, fs, nch, d, bw, theta=np.linspace(-90, 90, 73), c=343):    
     """
-    Simple multiband Delay-and-Sum spatial filter implementation.
+    Simple multiband Capon Method spatial filter implementation.
     Parameters:
     - y: mic array signals
     - fs: sampling rate
@@ -26,9 +33,9 @@ def das_filter_v2(y, fs, nch, d, bw, theta=np.linspace(-90, 90, 73), c=343):
         a_H = a.T.conj()     
         spec = spectrum[f_spec_axis == f_c, :, :].squeeze()
         cov_est = np.cov(spec, bias=True)
-        
+        inv_cov_est = np.linalg.inv(cov_est)
         for i, _ in enumerate(theta):
-          p[i] += a_H[i, :] @ cov_est @ a[:, i]/(nch**2)
+          p[i] += 1/(a_H[i, :] @ inv_cov_est @ a[:, i])
     
     mag_p = np.abs(p)/len(bands)
         
