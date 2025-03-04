@@ -11,16 +11,26 @@ from scipy.signal import stft
 def capon_method(y, fs, nch, d, bw, theta=np.linspace(-90, 90, 73), c=343):    
     """
     Simple multiband Capon Method spatial filter implementation.
+    
     Parameters:
-    - y: mic array signals
-    - fs: sampling rate
-    - nch: number of mics in the array
-    - d: mic spacing
-    - bw: (low freq, high freq)
-    - theta: angle vector
-    - c: sound speed
+        y: mic array signals.
+        
+        fs: sampling rate.
+        
+        nch: number of mics in the array.
+        
+        d: mic spacing.
+        
+        bw: (low freq, high freq).
+        
+        theta: angle vector.
+        
+        c: sound speed.
 
-    Returns: average spatial energy distribution estimation across bands
+    Returns:
+        theta: angle vector.
+        
+        mag_p: average spatial energy distribution estimation.
     """
     win_len = 128
     f_spec_axis, _, spectrum = stft(y, fs=fs, window=np.ones((win_len, )), nperseg=win_len, noverlap=win_len-1, axis=0)

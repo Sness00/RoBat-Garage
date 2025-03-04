@@ -1,5 +1,5 @@
 """
-Penits
+
 """
 # %% Libraries and files
 
@@ -48,7 +48,7 @@ for i in np.arange(len(audio_files)):
 channels = np.array(channels)
 
 Channels = fft.fft(channels, n=2048, axis=1)
-Channels_uni = Channels[0:1024]
+Channels_uni = Channels[:, 0:1024]
 freqs = fft.fftfreq(2048, 1 / fs)
 freqs = freqs[0:1024]
 R = 1

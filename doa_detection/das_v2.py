@@ -1,22 +1,36 @@
 import numpy as np
 from scipy.signal import stft
 
-def das_filter_v2(y, fs, nch, d, bw, theta=np.linspace(-90, 90, 73), c=343):    
+def das_filter_v2(y, fs, nch, d, bw, theta=np.linspace(-90, 90, 73), c=343, wlen=64):    
     """
     Simple multiband Delay-and-Sum spatial filter implementation.
+    
     Parameters:
-    - y: mic array signals
-    - fs: sampling rate
-    - nch: number of mics in the array
-    - d: mic spacing
-    - bw: (low freq, high freq)
-    - theta: angle vector
-    - c: sound speed
+        y: mic array signals.
+        
+        fs: sampling rate.
+        
+        nch: number of mics in the array.
+        
+        d: mic spacing.
+        
+        bw: (low freq, high freq).
+        
+        theta: angle vector.
+        
+        c: sound speed.
+        
+        wlen: STFT window length
 
-    Returns: average spatial energy distribution estimation across bands
+    Returns:
+        theta: angle vector.
+        
+        mag_p: average spatial energy distribution estimation.
+        
+        
+        
     """
-    win_len = 128
-    f_spec_axis, _, spectrum = stft(y, fs=fs, window=np.ones((win_len, )), nperseg=win_len, noverlap=win_len-1, axis=0)
+    f_spec_axis, _, spectrum = stft(y, fs=fs, window=np.ones((wlen, )), nperseg=wlen, noverlap=wlen-1, axis=0)
     bands = f_spec_axis[(f_spec_axis >= bw[0]) & (f_spec_axis <= bw[1])]
     p = np.zeros_like(theta, dtype=complex)
     
