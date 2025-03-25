@@ -64,7 +64,7 @@ BW = 2e3
 linestyles = ["-", "--", "-.", ":"]
 
 fig, (ax1, ax2) = plt.subplots(1, 2, subplot_kw={"projection": "polar"})
-plt.suptitle("Radiance Pattern - Senscomp Series 7000 Transducer")
+plt.suptitle("Radiance Pattern - Senscomp Series 7000 Transducer", fontsize=35)
 i = 3
 for fc in central_freq[0:4]:
     rad_patt = np.mean(
@@ -78,9 +78,10 @@ for fc in central_freq[0:4]:
         rad_patt_norm_dB,
         label=str(fc)[0:2] + " [kHz]",
         linestyle=linestyles[i],
+        linewidth=2.5
     )
     i -= 1
-ax1.legend(loc="upper right", bbox_to_anchor=(1.1, 1.1))
+ax1.legend(loc="upper right", bbox_to_anchor=(1.1, 1.1), fontsize='15')
 # offset polar axes by -90 degrees
 ax1.set_theta_offset(np.pi / 2)
 # set theta direction to clockwise
@@ -90,6 +91,7 @@ ax1.set_xticks(np.linspace(0, 2 * np.pi, 18, endpoint=False))
 # less radial ticks
 ax1.set_yticks(np.linspace(-40, 0, 5))
 ax1.set_rlabel_position(100)
+ax1.set_rlabel_position(-90)
 
 i = 3
 for fc in central_freq[4:8]:
@@ -104,9 +106,10 @@ for fc in central_freq[4:8]:
         rad_patt_norm_dB,
         label=str(fc)[0:2] + " [kHz]",
         linestyle=linestyles[i],
+        linewidth=2.5
     )
     i -= 1
-ax2.legend(loc="upper right", bbox_to_anchor=(1.1, 1.1))
+ax2.legend(loc="upper right", bbox_to_anchor=(1.1, 1.1), fontsize='15')
 # offset polar axes by -90 degrees
 ax2.set_theta_offset(np.pi / 2)
 # set theta direction to clockwise
@@ -116,10 +119,12 @@ ax2.set_xticks(np.linspace(0, 2 * np.pi, 18, endpoint=False))
 # less radial ticks
 ax2.set_yticks(np.linspace(-40, 0, 5))
 ax2.set_rlabel_position(100)
+ax2.set_rlabel_position(-90)
 
 plt.tight_layout()
 plt.show()
-
+# %%
+fig.savefig('radiation', transparent=True)
 # %% Mean radiance pattern display
 
 rad_patt = np.mean(radiance, axis=1)
