@@ -1,4 +1,4 @@
-<REAPER_PROJECT 0.1 "7.35/win64" 1743069565
+<REAPER_PROJECT 0.1 "7.35/win64" 1743008069
   <NOTES 0 2
   >
   RIPPLE 0 0
@@ -115,7 +115,7 @@
     SEL 0
     REC 0 0 1 0 0 0 0 0
     VU 2
-    TRACKHEIGHT 80 0 0 0 0 0 0
+    TRACKHEIGHT 64 0 0 0 0 0 0
     INQ 0 0 0 0.5 100 0 0 100
     NCHAN 2
     FX 0
@@ -176,7 +176,7 @@
     SEL 0
     REC 0 0 1 0 0 0 0 0
     VU 2
-    TRACKHEIGHT 88 0 0 0 0 0 0
+    TRACKHEIGHT 69 0 0 0 0 0 0
     INQ 0 0 0 0.5 100 0 0 100
     NCHAN 2
     FX 0
@@ -188,7 +188,7 @@
     <FXCHAIN
       WNDRECT 228 240 951 222
       SHOW 0
-      LASTSEL -1
+      LASTSEL 0
       DOCKED 0
       BYPASS 0 0 0
       <JS loser/WhiteNoise ""
@@ -207,7 +207,7 @@
       FADEIN 1 0 0 1 0 0 0
       FADEOUT 1 0 0 1 0 0 0
       MUTE 0 0
-      SEL 0
+      SEL 1
       IGUID {131A2989-EDD4-4C05-97D3-E1B5309E022F}
       IID 4
       NAME playback_sweeps_fast_rising-imported.wav
@@ -218,67 +218,6 @@
       GUID {A353721F-A06D-4560-A475-1845D29B567F}
       <SOURCE WAVE
         FILE "Media\playback_sweeps_fast_rising-imported.wav"
-      >
-    >
-  >
-  <TRACK {1AD2BD48-3E64-4B34-9087-97E693227D27}
-    NAME "65k - 95k"
-    PEAKCOL 16576
-    BEAT -1
-    AUTOMODE 0
-    PANLAWFLAGS 3
-    VOLPAN 1 0 -1 -1 1
-    MUTESOLO 0 0 0
-    IPHASE 0
-    PLAYOFFS 0 1
-    ISBUS 0 0
-    BUSCOMP 0 0 0 0 0
-    SHOWINMIX 1 0.6667 0.5 1 0.5 0 0 0
-    FIXEDLANES 9 0 0 0 0
-    SEL 0
-    REC 0 0 1 0 0 0 0 0
-    VU 2
-    TRACKHEIGHT 0 0 0 0 0 0 0
-    INQ 0 0 0 0.5 100 0 0 100
-    NCHAN 2
-    FX 0
-    TRACKID {1AD2BD48-3E64-4B34-9087-97E693227D27}
-    PERF 0
-    MIDIOUT -1
-    MAINSEND 0 0
-    <FXCHAIN
-      WNDRECT 24 60 951 222
-      SHOW 0
-      LASTSEL 0
-      DOCKED 0
-      BYPASS 0 0 0
-      <JS loser/WhiteNoise ""
-        -120 -40 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-      >
-      FLOATPOS 0 0 0 0
-      FXID {12A1F798-B5FA-4219-B78A-7FECA86D4D22}
-      WAK 0 0
-    >
-    <ITEM
-      POSITION 0
-      SNAPOFFS 0
-      LENGTH 0.609
-      LOOP 1
-      ALLTAKES 0
-      FADEIN 1 0 0 1 0 0 0
-      FADEOUT 1 0 0 1 0 0 0
-      MUTE 0 0
-      SEL 1
-      IGUID {688D1C38-F60C-4BAE-BF33-3C556D62EC57}
-      IID 5
-      NAME 65k-95k.wav
-      VOLPAN 1 0 1 -1
-      SOFFS 0
-      PLAYRATE 1 1 0 -1 0 0.0025
-      CHANMODE 0
-      GUID {8A403FD8-9043-4F74-9B7C-02A0EF4A48C4}
-      <SOURCE WAVE
-        FILE "Media\65k-95k.wav"
       >
     >
   >
