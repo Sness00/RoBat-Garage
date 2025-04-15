@@ -1,5 +1,8 @@
 __pycache__
 *.wav
 *.rpp
-*.wav.repeaks
+**/*.repeaks
 *.rpp-bak
+sweeps/
+gras_recording/
+knowles_array_directivity/sweeps_and_calibration/
