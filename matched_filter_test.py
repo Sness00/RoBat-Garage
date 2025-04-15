@@ -4,7 +4,7 @@ from scipy import signal
 
 fs = 192e3
 
-dur1 = 20e-3
+dur1 = 11e-3
 t1 = np.linspace(0, dur1, int(fs*dur1))
 x1 = signal.chirp(t1, 80e3, t1[-1], 20e3) 
 win1 = signal.windows.tukey(len(x1), alpha=0.2)
@@ -15,9 +15,9 @@ t2 = np.linspace(0, dur2, int(fs*dur2))
 x2 = signal.chirp(t2, 80e3, t2[-1], 20e3)
 win2 = signal.windows.tukey(len(x2), alpha=0.2)
 x2_win = x2*win2
-x2_aligned = np.concatenate((np.zeros(int(fs*0.35*dur2)), x2_win, np.zeros(int(fs*0.65*dur2))))
+x2_aligned = np.concatenate((np.zeros(int(fs*0.05*dur2)), x2_win, np.zeros(int(fs*0.05*dur2))))
 
-attenuation = 11.5
+attenuation = 2
 print('Echo attenuation: %.0f [dB]' % (20*np.log10(1/attenuation)))
 x = (x1_win/attenuation + x2_aligned)/2
 x_padded = np.pad(x, (int(fs*0.01), int(fs*0.005)), 'constant')
@@ -39,7 +39,7 @@ plt.xlabel('time [s]')
 plt.ylabel('frequency [Hz]')
 plt.show()
 
-mf = np.roll(signal.correlate(x_padded, x1_win, 'same', method='fft'), -len(x1_win)//2)
+mf = np.roll(signal.correlate(x_padded, x1_win, 'same', method='direct'), -len(x1_win)//2)
 mf_envelope = np.abs(signal.hilbert(mf))
 
 plt.figure()

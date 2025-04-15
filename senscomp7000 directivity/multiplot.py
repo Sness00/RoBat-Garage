@@ -14,45 +14,30 @@ dname = os.path.dirname(abspath)
 os.chdir(dname)
 
 # Load audio files, then plot them in a 6x6 grid
-DIR = "./cut_sweeps/"  # Directory containing the audio files
+DIR = "./sanken_CO-100K/sweeps_1/"  # Directory containing the audio files
 audio_files = os.listdir(DIR)  # List all files in the sweeps directory
 
-# %% Plot of the collected data
-
-fig, axs = plt.subplots(6, 6, figsize=(20, 20))
-
-for i in range(6):
-    for j in range(6):
-        # Load audio file
-        audio, fs = soundfile.read(DIR + audio_files[i * 6 + j])
-        # Plot audio file
-        axs[i, j].plot(np.linspace(0, len(audio) / fs, len(audio)), audio)
-        axs[i, j].set_title(audio_files[i * 6 + j])
-        axs[i, j].set_xlabel("Time (s)")
-        axs[i, j].set_ylabel("Amplitude")
-        # Shared x and y axes
-        axs[i, j].sharex(axs[0, 0])
-        axs[i, j].sharey(axs[0, 0])
-
-plt.tight_layout()
-plt.show()
-
 # %% Radiance computation
+NFFT = 2048
+radiances = []
+for i in np.arange(5):
+    channels = []
+    for j in np.arange(i, len(audio_files), 5):
+        audio, fs = soundfile.read(DIR + audio_files[j])
+        channels.append(audio)
+    channels = np.array(channels)
 
-channels = []
-for i in np.arange(len(audio_files)):
-    audio, fs = soundfile.read(DIR + audio_files[i])
-    if audio.shape[0] > 1919:
-        audio = audio[0:1919]
-    channels.append(audio)
-channels = np.array(channels)
+    Channels = fft.fft(channels, n=NFFT, axis=1)
+    Channels_uni = Channels[:, 0:NFFT//2]
+    freqs = fft.fftfreq(NFFT, 1 / fs)
+    freqs = freqs[0:NFFT//2]
+    R = 1
+    radiance = 4 * np.pi * R * np.abs(Channels_uni)
+    radiances.append(radiance)
 
-Channels = fft.fft(channels, n=2048, axis=1)
-Channels_uni = Channels[:, 0:1024]
-freqs = fft.fftfreq(2048, 1 / fs)
-freqs = freqs[0:1024]
-R = 1
-radiance = 4 * np.pi * R * np.abs(Channels_uni)
+radiances = np.array(radiances)
+mean_radiance = np.mean(radiances, axis=0)
+
 theta = np.linspace(0, 350, 36)
 theta = np.append(theta, theta[0])
 
@@ -64,11 +49,11 @@ BW = 2e3
 linestyles = ["-", "--", "-.", ":"]
 
 fig, (ax1, ax2) = plt.subplots(1, 2, subplot_kw={"projection": "polar"})
-plt.suptitle("Radiance Pattern - Senscomp Series 7000 Transducer", fontsize=35)
+plt.suptitle("Radiance Pattern - Senscomp Series 7000 Transducer")
 i = 3
 for fc in central_freq[0:4]:
     rad_patt = np.mean(
-        radiance[:, (freqs < fc + BW) & (freqs > fc - BW)], axis=1
+        mean_radiance[:, (freqs < fc + BW) & (freqs > fc - BW)], axis=1
     )
     rad_patt_norm = rad_patt / np.max(rad_patt)
     rad_patt_norm_dB = 20 * np.log10(rad_patt_norm)
@@ -77,11 +62,10 @@ for fc in central_freq[0:4]:
         np.deg2rad(theta),
         rad_patt_norm_dB,
         label=str(fc)[0:2] + " [kHz]",
-        linestyle=linestyles[i],
-        linewidth=2.5
+        linestyle=linestyles[i]
     )
     i -= 1
-ax1.legend(loc="upper right", bbox_to_anchor=(1.1, 1.1), fontsize='15')
+ax1.legend(loc="upper right", bbox_to_anchor=(1.1, 1.1))
 # offset polar axes by -90 degrees
 ax1.set_theta_offset(np.pi / 2)
 # set theta direction to clockwise
@@ -96,7 +80,7 @@ ax1.set_rlabel_position(-90)
 i = 3
 for fc in central_freq[4:8]:
     rad_patt = np.mean(
-        radiance[:, (freqs < fc + BW) & (freqs > fc - BW)], axis=1
+        mean_radiance[:, (freqs < fc + BW) & (freqs > fc - BW)], axis=1
     )
     rad_patt_norm = rad_patt / np.max(rad_patt)
     rad_patt_norm_dB = 20 * np.log10(rad_patt_norm)
@@ -105,11 +89,10 @@ for fc in central_freq[4:8]:
         np.deg2rad(theta),
         rad_patt_norm_dB,
         label=str(fc)[0:2] + " [kHz]",
-        linestyle=linestyles[i],
-        linewidth=2.5
+        linestyle=linestyles[i]
     )
     i -= 1
-ax2.legend(loc="upper right", bbox_to_anchor=(1.1, 1.1), fontsize='15')
+ax2.legend(loc="upper right", bbox_to_anchor=(1.1, 1.1))
 # offset polar axes by -90 degrees
 ax2.set_theta_offset(np.pi / 2)
 # set theta direction to clockwise
@@ -124,7 +107,7 @@ ax2.set_rlabel_position(-90)
 plt.tight_layout()
 plt.show()
 # %%
-fig.savefig('radiation', transparent=True)
+# fig.savefig('radiation', transparent=True)
 # %% Mean radiance pattern display
 
 rad_patt = np.mean(radiance, axis=1)
@@ -145,5 +128,8 @@ ax.set_ylabel("dB")
 ax.set_yticks(np.linspace(-40, 0, 5))
 ax.set_rlabel_position(-90)
 ax.set_title(
-    "Senscomp Series 7000 Transducer Mean Radiance Pattern 10[kHz] - 95[kHz]"
+    "Senscomp Series 7000 Transducer Mean Radiance Pattern 15[kHz] - 95[kHz]"
 )
+plt.tight_layout()
+plt.show()
+
