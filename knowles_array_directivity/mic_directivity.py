@@ -77,7 +77,7 @@ if __name__ == '__main__':
     ax.set_xticks(np.linspace(0, 2 * np.pi, 18, endpoint=False))
     ax.set_ylabel("dB")
     # less radial ticks
-    ax.set_yticks(np.linspace(-40, 0, 11))
+    ax.set_yticks(np.arange(-60, 0, 2), labels=[str(i) for i in np.arange(-60, 0, 2)], fontsize=5)
     ax.set_rlabel_position(-90)
     ax.set_title('Microphones Directivity Patterns')
     ax.legend(loc="upper right", bbox_to_anchor=(1.1, 1.1))
@@ -143,7 +143,7 @@ if __name__ == '__main__':
             # more theta ticks
             ax2.set_xticks(np.linspace(0, 2 * np.pi, 18, endpoint=False))
             # less radial ticks
-            ax2.set_yticks(np.linspace(-40, 0, 5))
+            ax2.set_yticks(np.arange(-60, 0, 20))
             ax2.set_rlabel_position(100)
             ax2.set_rlabel_position(-90)
 
