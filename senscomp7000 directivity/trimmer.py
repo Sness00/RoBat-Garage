@@ -40,7 +40,8 @@ def extract_sweep(files, series, fs):
         xcorr = signal.correlate(x, sig, mode='same')
         xcorr_rolled = np.roll(xcorr, -len(sig)//2)
         envelope = np.abs(signal.hilbert(xcorr_rolled))
-        idxs = signal.find_peaks(envelope, prominence=0.5, distance=int(30e-3*fs))[0]
+        idxs = signal.find_peaks(envelope, prominence=0.5, distance=int(60e-3*fs))[0]
+        print(idxs.shape)
         for n, i in enumerate(idxs[5*(series-1):5*series]):
             x_trimmed = x[i-384:i + int(dur*fs) + 384]
             sf.write(rec_dir + '/' + cut_dir + '/' +
@@ -71,10 +72,10 @@ if __name__ == '__main__':
 
     fs = 192e3
 
-    rec_dir = './sanken_CO-100K'
+    rec_dir = './sanken_20250416/' # Directory where the recordings are stored
 
     audio_files = os.listdir(rec_dir) # List all files in the sweeps directory
     audio_files = [f for f in audio_files if f.endswith('.wav')] # Keep only the files with 3 digits and .wav extension
-    series = 2
-    # extract_sweep(audio_files, series, fs)
+    series = 1
+    extract_sweep(audio_files, series, fs)
     extract_noise_floor(audio_files, fs)

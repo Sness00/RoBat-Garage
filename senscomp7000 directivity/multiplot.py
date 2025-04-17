@@ -14,7 +14,7 @@ dname = os.path.dirname(abspath)
 os.chdir(dname)
 
 # Load audio files, then plot them in a 6x6 grid
-DIR = "./sanken_CO-100K/sweeps_1/"  # Directory containing the audio files
+DIR = "./sanken_20250416/sweeps_1/"  # Directory containing the audio files
 audio_files = os.listdir(DIR)  # List all files in the sweeps directory
 
 # %% Radiance computation

@@ -4,11 +4,13 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy import fft
 
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
 # Load audio files, then plot them in a 6x6 grid
-SIG_DIR = "./sanken_CO-100K/sweeps_2/"  # Directory containing the audio files
+SIG_DIR = "./sanken_20250416/sweeps_1/"  # Directory containing the audio files
 signal_files = os.listdir(SIG_DIR)  # List all files in the sweeps directory
 
-NOISE_DIR = "./sanken_CO-100K/noise_floor/"  # Directory containing the audio files
+NOISE_DIR = "./sanken_20250416/noise_floor/"  # Directory containing the audio files
 noise_files = os.listdir(NOISE_DIR)
 
 snrs = []
