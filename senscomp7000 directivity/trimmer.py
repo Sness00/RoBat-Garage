@@ -19,7 +19,7 @@ def pow_two_pad_and_window(vec, fs, show = True):
         plt.show()
     return padded_windowed_vec/max(padded_windowed_vec)
 
-def extract_sweep(files, series, fs):
+def extract_sweep(files, series, fs, apply_symmetry=False):
     cut_dir = ['sweeps_1', 'sweeps_2']
     cut_dir = cut_dir[series-1]
     if not os.path.exists(rec_dir + '/' + cut_dir):
@@ -46,12 +46,13 @@ def extract_sweep(files, series, fs):
             x_trimmed = x[i-384:i + int(dur*fs) + 384]
             sf.write(rec_dir + '/' + cut_dir + '/' +
                     file_name[0:3] + 'deg_' + str(n+1) + '.wav', x_trimmed, int(fs))
-            if int(file_name[0:3]) > 0 and int(file_name[0:3]) < 180:
-                x_symm = x_trimmed
-                file_name_symm = str(360 - int(file_name[0:3])) + 'deg' + '_' + str(n+1) + '.wav'
-                sf.write(rec_dir + '/' + cut_dir + '/' + file_name_symm, x_symm, int(fs))
+            if apply_symmetry:
+                if int(file_name[0:3]) > 0 and int(file_name[0:3]) < 180:
+                    x_symm = x_trimmed
+                    file_name_symm = str(360 - int(file_name[0:3])) + 'deg' + '_' + str(n+1) + '.wav'
+                    sf.write(rec_dir + '/' + cut_dir + '/' + file_name_symm, x_symm, int(fs))
 
-def extract_noise_floor(files, fs):
+def extract_noise_floor(files, fs, apply_symmetry=False):
     cut_dir = 'noise_floor'
     if not os.path.exists(rec_dir + '/' + cut_dir):
         os.makedirs(rec_dir + '/' + cut_dir)
@@ -59,10 +60,11 @@ def extract_noise_floor(files, fs):
         print(file_name)
         x = sf.read(rec_dir + '/' + file_name, start=int(fs), frames=int(fs*0.01))[0]
         sf.write(rec_dir + '/' + cut_dir + '/' + file_name, x, int(fs))
-        if int(file_name[0:3]) > 0 and int(file_name[0:3]) < 180:
-                x_symm = x
-                file_name_symm = str(360 - int(file_name[0:3])) + 'deg' + '.wav'
-                sf.write(rec_dir + '/' + cut_dir + '/' + file_name_symm, x_symm, int(fs))
+        if apply_symmetry:
+            if int(file_name[0:3]) > 0 and int(file_name[0:3]) < 180:
+                    x_symm = x
+                    file_name_symm = str(360 - int(file_name[0:3])) + 'deg' + '.wav'
+                    sf.write(rec_dir + '/' + cut_dir + '/' + file_name_symm, x_symm, int(fs))
 
 if __name__ == '__main__':
 
@@ -72,10 +74,10 @@ if __name__ == '__main__':
 
     fs = 192e3
 
-    rec_dir = './sanken_20250416/' # Directory where the recordings are stored
+    rec_dir = './gras_20250416/' # Directory where the recordings are stored
 
     audio_files = os.listdir(rec_dir) # List all files in the sweeps directory
     audio_files = [f for f in audio_files if f.endswith('.wav')] # Keep only the files with 3 digits and .wav extension
     series = 1
     extract_sweep(audio_files, series, fs)
-    extract_noise_floor(audio_files, fs)
+    # extract_noise_floor(audio_files, fs)
