@@ -9,9 +9,10 @@ if __name__ == "__main__":
     data_dir = './pseudospectra/'
     
     # Load the data from the .npy files
-    p_dB = np.load(data_dir  + 'das_20250429_18-00-55_-60.npy')
+    p_dB = np.load(data_dir  + 'das_20250429_18-09-04_30.npy')
     theta = np.linspace(-90, 90, p_dB.shape[0])    
     theta_bar = theta[np.argmax(p_dB)]
+    print(f"\nDOA: {theta_bar:.2f} degrees")
     
     # Create a scatter plot of the DOA data
     fig, ax2 = plt.subplots(subplot_kw={'projection': 'polar'})
