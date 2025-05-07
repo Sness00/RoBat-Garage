@@ -11,3 +11,5 @@ sanken_CO-100K/
 **/*.pdf
 results/
 images/
+offsets/
+videos/

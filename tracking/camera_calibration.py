@@ -53,12 +53,20 @@ cv2.destroyAllWindows()
 # calibration
 ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
 
+mean_error = 0
+for i in range(len(objpoints)):
+    imgpoints2, _ = cv2.projectPoints(objpoints[i], rvecs[i], tvecs[i], mtx, dist)
+    error = cv2.norm(imgpoints[i], imgpoints2, cv2.NORM_L2)/len(imgpoints2)
+    mean_error += error
+
+print( "total error: {}".format(mean_error/len(objpoints)) )
+
 # transform the matrix and distortion coefficients to writable lists
 data = {'camera_matrix': np.asarray(mtx).tolist(),
         'dist_coeff': np.asarray(dist).tolist()}
 
 # and save it to a file
-with open("calibration_matrix.yaml", "w") as f:
-    yaml.dump(data, f)
+# with open("calibration_matrix.yaml", "w") as f:
+#     yaml.dump(data, f)
 
 # done
