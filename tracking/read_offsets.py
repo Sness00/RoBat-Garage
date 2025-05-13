@@ -22,7 +22,7 @@ def pow_two_pad_and_window(vec, show=False):
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-offsets = np.load('offsets/20250507_18-18-43_offsets.npy')
+offsets = np.load('offsets/20250513_18-46-35_offsets.npy')
 
 fs = 176400
 dur = 3e-3
@@ -42,12 +42,12 @@ chirp = signal.chirp(t_tone, hi_freq, t_tone[-1], low_freq)
 sig = pow_two_pad_and_window(chirp, show=False)
 
 C_AIR = 343
-min_distance = 10e-2
-discarded_samples = int(np.floor((min_distance*2)/C_AIR*fs))
+min_distance = 7e-2
+discarded_samples = int(np.floor(((min_distance + 2.5e-2)*2)/C_AIR*fs))
 
 def update(frame):
     global curr_end
-    audio_data = sf.read('20250507_18-18-43.wav', start=curr_end, stop=curr_end + offsets[frame])[0]
+    audio_data = sf.read('audio/20250513_18-46-35.wav', start=curr_end, stop=curr_end + offsets[frame])[0]
     curr_end += offsets[frame]
     dB_rms = 20*np.log10(np.mean(np.std(audio_data, axis=0)))    
     if dB_rms > output_threshold:

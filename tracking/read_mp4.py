@@ -10,8 +10,8 @@ from scipy import signal
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 # Define path to video
-input_path = './videos/full_video_obstacles.mp4'
-robot_path = './20250508_11-27-54.wav'
+input_path = './videos/GX010517.mp4'
+robot_path = './audio/20250513_18-46-35.wav'
 try:
     robot_recording, fs = sf.read(robot_path)
     # Run ffmpeg to extract audio and pipe as WAV
@@ -36,12 +36,10 @@ try:
 
     t = np.linspace(0, len(xcorr) / sr, num=len(xcorr))
 
-    # sf.write('robot_audio.wav', robot_audio[fs:10*fs]/np.max(np.abs(robot_audio[fs:10*fs])), fs)
-    # sf.write('audio_data.wav', np.roll(audio_data/np.max(np.abs(audio_data)), -index)[fs:10*fs], fs)
     plt.figure()
-    plt.plot(np.roll(audio_data/np.max(np.abs(audio_data)), -index)[fs:10*fs])
-    plt.plot(robot_audio[fs:10*fs]/np.max(np.abs(robot_audio[fs:10*fs])))
-        
+    plt.plot(robot_audio/np.max(np.abs(robot_audio)))
+    plt.plot(np.roll(audio_data/np.max(np.abs(audio_data)), -index))    
+    plt.plot(np.roll(xcorr/np.max(np.abs(xcorr)), -index))        
     plt.xlabel('Time [s]')
     plt.ylabel('Amplitude')
     plt.grid()

@@ -90,7 +90,7 @@ robot_id = 0
 arena_w = 1
 arena_l = 1.7
 # Load video file
-video_path = './videos/full_video_obstacles.mp4'
+video_path = './videos/GX010517.mp4'
 cap = cv2.VideoCapture(video_path)
 
 # Camera calibration parameters
