@@ -90,7 +90,7 @@ robot_id = 0
 arena_w = 1
 arena_l = 1.7
 # Load video file
-video_path = './videos/GX010517.mp4'
+video_path = './videos/GX010518.mp4'
 cap = cv2.VideoCapture(video_path)
 
 # Camera calibration parameters
@@ -112,13 +112,14 @@ object_points = np.array(object_points, dtype='float32')
 
 # Loop through the video
 frame_count = 0
+trajectory = np.zeros((0, 2), dtype=np.float32)
 try:
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
         # print(frame_count)
-        if frame_count % 20 == 0:
+        if frame_count % 5 == 0:
 
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
@@ -145,63 +146,11 @@ try:
                         corners_13 = corners_array[arena_mrkr_indx['13']]
                         corners_14 = corners_array[arena_mrkr_indx['14']]
                         pixel_per_meters = np.mean([np.linalg.norm(corners_12[:, 3] - corners_13[:, 0], axis=1)/arena_w, np.linalg.norm(corners_13[:, 0] - corners_14[:, 1], axis=1)/arena_l])
-                        # print(pixel_per_meters)
-                        
-                        
-                        # ret, rvec, tvec = cv2.solvePnP(object_points, corners_array[index], np.array(data['camera_matrix']), np.array(data['dist_coeff']))                
-                        # if ret:
-                        # R = cv2.Rodrigues(rvec)[0] 
-                        # cv2.drawFrameAxes(frame, np.array(data['camera_matrix']), np.array(data['dist_coeff']), rvec, tvec, marker_length, 2)
-                        # T_camera_marker = np.block([
-                        #                         [R, tvec],
-                        #                         [np.zeros((1, 3)), 1]
-                        #                     ])
-                        # T_translation_marker = np.array([
-                        #                             [1, 0, 0, 0],
-                        #                             [0, 1, 0, -0.5],
-                        #                             [0, 0, 1, 0],
-                        #                             [0, 0, 0, 1]
-                        #                         ])
-                        # T_new = T_camera_marker @ T_translation_marker
-                        # mic_position = T_new[:3, 3]
-                        # mic_position_pixels = mic_position[:2] * pixel_per_meters * -0.5
-                        # print(mic_position_pixels)                   
-                        # mic_position_pixels = cv2.projectPoints(mic_position, rvec, tvec, np.array(data['camera_matrix']), np.array(data['dist_coeff']))[0]
-                        # mic_position_pixels = np.squeeze(mic_position_pixels.reshape(-1, 2))
-                        # print(mic_position_pixels)
-                        # center = center[:2]
-                        # find center of the marker
                         center = np.mean(corners_array[index], axis=1)[0]
+                        trajectory = np.append(trajectory, np.array([[center[0], center[1]]]), axis=0)
                         tl, tr, br, bl = np.squeeze(corners_array[index])
                         mic_positions = np.astype(get_offset_point(center, tl, tr, offset=-pixel_per_meters*0.055), np.int32)
                         
-                        # print(center[1]/center[0])
-                        # center = mic_position_pixels.reshape(-1, 2)[0]
-                        
-                        # print(center)
-
-                        # rotation_angle = 0  # Replace with actual rotation angle
-
-                        # # Convert angle to radians
-                        # theta_rad = np.radians(rotation_angle)
-
-                        # # Compute the translation vector (100 pixels forward along the X-axis)
-                        # translation = np.array([100, 0])  # Moving along X direction
-
-                        # # Compute the rotation matrix for the marker's reference frame
-                        # rotation_matrix = np.array([
-                        #     [np.cos(theta_rad), -np.sin(theta_rad)],
-                        #     [np.sin(theta_rad), np.cos(theta_rad)]
-                        # ])
-
-                        # # Transform the translation vector into global coordinates
-                        # global_translation = rotation_matrix @ translation
-
-                        # # Compute the new center position
-                        # center = center + global_translation
-                        # print(center)
-                        # cv2.circle(frame, center.astype(int), 50, (255, 255, 0), -1)
-
                         mask = np.ones(len(ids), dtype=bool)
                         mask[index] = False
                         mask[list(arena_mrkr_indx.values())] = False
@@ -240,17 +189,17 @@ try:
                                     break
                             # print(np.rad2deg(angle))
                             if (found_nearest and angle <= np.pi/2):
-                                # print distance
-                                print(f"Distance: {sd} cm")
+                                # print distance and angle
+                                print("Distance: %.1f [cm], Angle: %.1f [deg]" % (sd, np.rad2deg(angle)))
                                 cv2.line(frame, mic_positions, closest_obstacle.astype(int), (255, 51, 20), 2)
                                 # print angle and id of nearest obstacle
                                 # cv2.putText(frame, str(obst_ids[np.where(distances == sd)][0]), closest_obstacle.astype(int), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                                 # print(angle, frame_count)
-
-                    #     # You can access marker positions here
-                    #     for i, corner in enumerate(corners):
-                    #         print(f"Marker ID: {ids[i][0]}, Corners: {corner}")
-
+                    
+                        if len(trajectory) > 2:
+                            # Draw trajectory
+                            for i in range(len(trajectory) - 1):
+                                cv2.line(frame, tuple(trajectory[i].astype(int)), tuple(trajectory[i + 1].astype(int)), (0, 255, 0), 2)
                         # Display result
                         resized_frame = cv2.resize(frame, (screen_width, screen_height))
                         cv2.imshow('ArUco Tracker', resized_frame)
