@@ -10,40 +10,51 @@ from scipy import signal
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 # Define path to video
-input_path = './videos/GX010517.mp4'
-robot_path = './audio/20250513_18-46-35.wav'
+camera_path = './videos/GX010522.mp4'
+robot_path = './audio/20250514_17-21-20.wav'
+video_fps = 60
 try:
-    robot_recording, fs = sf.read(robot_path)
+    robot_audio, fs = sf.read(robot_path)
+    robot_audio = robot_audio[:, 0]
+    print( 'Robot audio duration: %.1f [s]' % (len(robot_audio)/fs))
     # Run ffmpeg to extract audio and pipe as WAV
     out, _ = (
         ffmpeg
-        .input(input_path)
+        .input(camera_path)
         .output('pipe:', format='wav', acodec='pcm_s16le')
         .run(capture_stdout=True, capture_stderr=True)
     )
 
     # Load audio from bytes using soundfile
-    audio_data, sr = librosa.load(io.BytesIO(out), sr=fs, mono=True)
-    print(sr)
-    # Convert to mono if stereo
-    if audio_data.ndim > 1:
-        audio_data = np.mean(audio_data, axis=1)   
+    camera_audio, sr = librosa.load(io.BytesIO(out), sr=fs, mono=True)
+    print( 'Camera audio duration: %.1f [s]' % (len(camera_audio)/fs))
 
-    xcorr = np.roll(signal.correlate(audio_data, robot_recording[:, 0], mode='same'), -len(robot_recording) // 2)
+    xcorr_unrolled = signal.correlate(camera_audio, robot_audio, mode='same')
+    xcorr = np.roll(xcorr_unrolled, -len(robot_audio) // 2)
     index = np.argmax(np.abs(xcorr))
-
-    robot_audio = robot_recording[:, 0]
-
-    t = np.linspace(0, len(xcorr) / sr, num=len(xcorr))
-
-    plt.figure()
-    plt.plot(robot_audio/np.max(np.abs(robot_audio)))
-    plt.plot(np.roll(audio_data/np.max(np.abs(audio_data)), -index))    
-    plt.plot(np.roll(xcorr/np.max(np.abs(xcorr)), -index))        
-    plt.xlabel('Time [s]')
-    plt.ylabel('Amplitude')
-    plt.grid()
-    plt.show()
+    frame = int(index / sr * video_fps)
+    print('Detected frame: %d' % frame)
+    # robot_audio = np.append(np.zeros(index), robot_audio)
+    # t = np.linspace(0, len(xcorr) / sr, num=len(xcorr))
+    # t_robot = np.linspace(0, len(robot_audio) / fs, num=len(robot_audio))
+    # fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True)
+    # ax1.plot(t_robot, robot_audio/np.max(np.abs(robot_audio)))
+    # ax1.set_xlabel('Time [s]')
+    # ax1.set_ylabel('Amplitude')
+    # ax1.grid()
+    # ax2.plot(t, camera_audio/np.max(np.abs(camera_audio)))
+    # ax2.set_xlabel('Time [s]')
+    # ax2.set_ylabel('Amplitude')
+    # ax2.grid() 
+    # ax3.plot(t, xcorr/np.max(np.abs(xcorr)))
+    # ax1.axvline(x=index/sr, color='r', linestyle='--', label='Detected delay')
+    # ax2.axvline(x=index/sr, color='r', linestyle='--', label='Detected delay')        
+    # ax3.axvline(x=index/sr, color='r', linestyle='--', label='Detected delay')
+    # ax3.set_xlabel('Time [s]')
+    # ax3.set_ylabel('Amplitude')
+    # ax3.grid()
+    # plt.tight_layout()
+    # plt.show()
 except ffmpeg.Error as e:
     print('ffmpeg error:', e.stderr.decode(), file=sys.stderr)
     sys.exit(1)
