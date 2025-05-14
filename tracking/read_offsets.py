@@ -1,6 +1,10 @@
 import os
+import sys
+import io
+import ffmpeg
 import numpy as np
 import soundfile as sf
+import librosa
 from sonar import sonar
 from scipy import signal
 from das_v2 import das_filter
@@ -22,80 +26,125 @@ def pow_two_pad_and_window(vec, show=False):
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-offsets = np.load('offsets/20250514_15-16-35_offsets.npy')
+offsets = np.load('./offsets/20250514_17-07-06_offsets.npy')
 
+camera_path = './videos/GX010518.mp4'
+robot_path = './audio/20250514_17-07-06.wav'
+video_fps = 60
+try:
+    robot_audio, fs = sf.read(robot_path)
+    robot_audio = robot_audio[:, 0]
+    print( 'Robot audio duration: %.1f [s]' % (len(robot_audio)/fs))
+    # Run ffmpeg to extract audio and pipe as WAV
+    out, _ = (
+        ffmpeg
+        .input(camera_path)
+        .output('pipe:', format='wav', acodec='pcm_s16le')
+        .run(capture_stdout=True, capture_stderr=True)
+    )
 
-fs = 176400
-dur = 3e-3
-hi_freq = 60e3
-low_freq = 20e3
-output_threshold = -50 # [dB]
-distance_threshold = 20 # [cm]
+    # Load audio from bytes using soundfile
+    camera_audio, sr = librosa.load(io.BytesIO(out), sr=fs, mono=True)
+    print( 'Camera audio duration: %.1f [s]' % (len(camera_audio)/fs))
 
-METHOD = 'capon' # 'das', 'capon'
-if METHOD == 'das':
-    spatial_filter = das_filter
-elif METHOD == 'capon':
-    spatial_filter = capon_method
+    xcorr = np.roll(signal.correlate(camera_audio, robot_audio, mode='same'), -len(robot_audio) // 2)
+    index = np.argmax(np.abs(xcorr))
+    start_frame = int(index / sr * video_fps)
+    print('Detected frame: %d' % start_frame)   
+    # robot_audio = np.append(np.zeros(index), robot_audio)
+    # t = np.linspace(0, len(xcorr) / sr, num=len(xcorr))
+    # t_robot = np.linspace(0, len(robot_audio) / fs, num=len(robot_audio))
+    # fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True)
+    # ax1.plot(t_robot, robot_audio/np.max(np.abs(robot_audio)))
+    # ax1.set_xlabel('Time [s]')
+    # ax1.set_ylabel('Amplitude')
+    # ax1.grid()
+    # ax2.plot(t, camera_audio/np.max(np.abs(camera_audio)))
+    # ax2.set_xlabel('Time [s]')
+    # ax2.set_ylabel('Amplitude')
+    # ax2.grid() 
+    # ax3.plot(t, xcorr/np.max(np.abs(xcorr)))
+    # ax1.axvline(x=index/sr, color='r', linestyle='--', label='Detected delay')
+    # ax2.axvline(x=index/sr, color='r', linestyle='--', label='Detected delay')        
+    # ax3.axvline(x=index/sr, color='r', linestyle='--', label='Detected delay')
+    # ax3.set_xlabel('Time [s]')
+    # ax3.set_ylabel('Amplitude')
+    # ax3.grid()
+    # plt.tight_layout()
+    # plt.show()
+    fs = 176400
+    dur = 3e-3
+    hi_freq = 60e3
+    low_freq = 20e3
+    output_threshold = -50 # [dB]
+    distance_threshold = 20 # [cm]
 
-t_tone = np.linspace(0, dur, int(fs*dur))
-chirp = signal.chirp(t_tone, hi_freq, t_tone[-1], low_freq)    
-sig = pow_two_pad_and_window(chirp)
+    METHOD = 'das' # 'das', 'capon'
+    if METHOD == 'das':
+        spatial_filter = das_filter
+    elif METHOD == 'capon':
+        spatial_filter = capon_method
 
-C_AIR = 343
-min_distance = 10e-2
-discarded_samples = int(np.floor(((min_distance + 2.5e-2)*2)/C_AIR*fs))
-max_distance = 1
-max_index = int(np.floor(((max_distance + 2.5e-2)*2)/C_AIR*fs))
+    t_tone = np.linspace(0, dur, int(fs*dur))
+    chirp = signal.chirp(t_tone, hi_freq, t_tone[-1], low_freq)    
+    sig = pow_two_pad_and_window(chirp)
 
-def update(frame):
-    print(frame)
-    # print(curr_end/fs)
-    audio_data, _ = sf.read('audio/20250514_15-16-35.wav', start=offsets[frame, 0], frames=offsets[frame, 1])
-    
-    # print(sr)
-    dB_rms = 20*np.log10(np.mean(np.std(audio_data, axis=0)))    
-    if dB_rms > output_threshold:
-        filtered_signals = signal.correlate(audio_data, np.reshape(sig, (-1, 1)), 'same', method='fft')
-        roll_filt_sigs = np.roll(filtered_signals, -len(sig)//2, axis=0)
-        
-        try:
-            distance, direct_path, obst_echo = sonar(roll_filt_sigs, discarded_samples, max_index, fs)
-            distance = distance*100 # [m] to [cm]
-            # print('\nDistance: %.1f [cm]' % distance)                             
-            # if distance == 0:
-            #     print('\nNo Obstacles')
-            theta, p = spatial_filter(
-                                        roll_filt_sigs[obst_echo - int(5e-4*fs):obst_echo + int(5e-4*fs)], 
-                                        fs=fs, nch=roll_filt_sigs.shape[1], d=2.70e-3, 
-                                        bw=(low_freq, hi_freq)
-                                    )
-            p_dB = 10*np.log10(p)
+    C_AIR = 343
+    min_distance = 10e-2
+    discarded_samples = int(np.floor(((min_distance + 2.5e-2)*2)/C_AIR*fs))
+    max_distance = 1
+    max_index = int(np.floor(((max_distance + 2.5e-2)*2)/C_AIR*fs))
+    def update(frame):
+        # print(curr_end/fs)
+        audio_data, _ = sf.read(robot_path, start=offsets[frame, 0], frames=offsets[frame, 1])
+        video_frame = int(offsets[frame, 0] / fs * video_fps) + start_frame
+        print('Video frame: %d' % video_frame)  
+        dB_rms = 20*np.log10(np.mean(np.std(audio_data, axis=0)))    
+        if dB_rms > output_threshold:
+            filtered_signals = signal.correlate(audio_data, np.reshape(sig, (-1, 1)), 'same', method='fft')
+            roll_filt_sigs = np.roll(filtered_signals, -len(sig)//2, axis=0)
             
-            if direct_path != obst_echo:
-                doa_index = np.argmax(p_dB)
-                theta_hat = theta[doa_index]
-                if distance > 0:
-                    # print('\nDistance: %.1f [cm] | DoA: %.2f [deg]' % (distance, theta_hat))            
-                    line.set_ydata(p_dB)
-                    ax.set_ylim(min(p_dB), max(p_dB) + 6)
-                    vline.set_xdata([np.deg2rad(theta_hat)])
-                    
-                    title.set_text('%.1f [cm], %.1f [s]' % (distance, offsets[frame, 0]/fs))
-            return line, vline
-        except ValueError:
-            print('\nNo valid distance or DoA')
+            try:
+                distance, direct_path, obst_echo = sonar(roll_filt_sigs, discarded_samples, max_index, fs)
+                distance = distance*100 # [m] to [cm]
+                # print('\nDistance: %.1f [cm]' % distance)                             
+                # if distance == 0:
+                #     print('\nNo Obstacles')
+                theta, p = spatial_filter(
+                                            roll_filt_sigs[obst_echo - int(5e-4*fs):obst_echo + int(5e-4*fs)], 
+                                            fs=fs, nch=roll_filt_sigs.shape[1], d=2.70e-3, 
+                                            bw=(low_freq, hi_freq)
+                                        )
+                p_dB = 10*np.log10(p)
+                
+                if direct_path != obst_echo:
+                    doa_index = np.argmax(p_dB)
+                    theta_hat = theta[doa_index]
+                    if distance > 0:
+                        # print('\nDistance: %.1f [cm] | DoA: %.2f [deg]' % (distance, theta_hat))            
+                        line.set_ydata(p_dB)
+                        ax.set_ylim(min(p_dB), max(p_dB) + 6)
+                        vline.set_xdata([np.deg2rad(theta_hat)])
+                        
+                        title.set_text('%.1f [cm], %.1f [s]' % (distance, offsets[frame, 0]/fs))
+                return line, vline
+            except ValueError:
+                print('\nNo valid distance or DoA')
 
-fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
-title = ax.set_title('')
-# Shift axes by -90 degrees
-ax.set_theta_offset(np.pi/2)
-# Limit theta between -90 and 90 degrees
-ax.set_xlim(-np.pi/2, np.pi/2)
-ax.set_ylim(-20, 40)        
-ax.grid(False)
-line = ax.plot(np.linspace(-np.pi/2, np.pi/2, 73), 0*np.sin(np.linspace(-np.pi/2, np.pi/2, 73)))[0]
-vline = ax.axvline(0, 0, 30, color='red', linestyle='--')
-# txt = plt.text(0, 0, '', ha='center', va='center', fontsize=12)
-ani = FuncAnimation(fig, update,  frames=len(offsets), interval=17, cache_frame_data=True, repeat=False)
-plt.show()
+    fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
+    title = ax.set_title('')
+    # Shift axes by -90 degrees
+    ax.set_theta_offset(np.pi/2)
+    # Limit theta between -90 and 90 degrees
+    ax.set_xlim(-np.pi/2, np.pi/2)
+    ax.set_ylim(-20, 40)        
+    ax.grid(False)
+    line = ax.plot(np.linspace(-np.pi/2, np.pi/2, 73), 0*np.sin(np.linspace(-np.pi/2, np.pi/2, 73)))[0]
+    vline = ax.axvline(0, 0, 30, color='red', linestyle='--')
+    # txt = plt.text(0, 0, '', ha='center', va='center', fontsize=12)
+    ani = FuncAnimation(fig, update,  frames=len(offsets), interval=17, cache_frame_data=True, repeat=False)
+    plt.show()
+
+except ffmpeg.Error as e:
+    print('ffmpeg error:', e.stderr.decode(), file=sys.stderr)
+    sys.exit(1)
