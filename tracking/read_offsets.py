@@ -26,10 +26,10 @@ def pow_two_pad_and_window(vec, show=False):
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-offsets = np.load('./offsets/20250514_17-07-06_offsets.npy')
+offsets = np.load('./offsets/20250514_17-20-16_offsets.npy')
 
-camera_path = './videos/GX010518.mp4'
-robot_path = './audio/20250514_17-07-06.wav'
+camera_path = './videos/GX010521.mp4'
+robot_path = './audio/20250514_17-20-16.wav'
 video_fps = 60
 try:
     robot_audio, fs = sf.read(robot_path)
@@ -50,28 +50,7 @@ try:
     xcorr = np.roll(signal.correlate(camera_audio, robot_audio, mode='same'), -len(robot_audio) // 2)
     index = np.argmax(np.abs(xcorr))
     start_frame = int(index / sr * video_fps)
-    print('Detected frame: %d' % start_frame)   
-    # robot_audio = np.append(np.zeros(index), robot_audio)
-    # t = np.linspace(0, len(xcorr) / sr, num=len(xcorr))
-    # t_robot = np.linspace(0, len(robot_audio) / fs, num=len(robot_audio))
-    # fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True)
-    # ax1.plot(t_robot, robot_audio/np.max(np.abs(robot_audio)))
-    # ax1.set_xlabel('Time [s]')
-    # ax1.set_ylabel('Amplitude')
-    # ax1.grid()
-    # ax2.plot(t, camera_audio/np.max(np.abs(camera_audio)))
-    # ax2.set_xlabel('Time [s]')
-    # ax2.set_ylabel('Amplitude')
-    # ax2.grid() 
-    # ax3.plot(t, xcorr/np.max(np.abs(xcorr)))
-    # ax1.axvline(x=index/sr, color='r', linestyle='--', label='Detected delay')
-    # ax2.axvline(x=index/sr, color='r', linestyle='--', label='Detected delay')        
-    # ax3.axvline(x=index/sr, color='r', linestyle='--', label='Detected delay')
-    # ax3.set_xlabel('Time [s]')
-    # ax3.set_ylabel('Amplitude')
-    # ax3.grid()
-    # plt.tight_layout()
-    # plt.show()
+    print('Detected frame: %d' % start_frame)
     fs = 176400
     dur = 3e-3
     hi_freq = 60e3
