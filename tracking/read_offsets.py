@@ -22,7 +22,8 @@ def pow_two_pad_and_window(vec, show=False):
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-offsets = np.load('offsets/20250513_18-46-35_offsets.npy')
+offsets = np.load('offsets/20250514_15-16-35_offsets.npy')
+
 
 fs = 176400
 dur = 3e-3
@@ -31,7 +32,7 @@ low_freq = 20e3
 output_threshold = -50 # [dB]
 distance_threshold = 20 # [cm]
 
-METHOD = 'das' # 'das', 'capon'
+METHOD = 'capon' # 'das', 'capon'
 if METHOD == 'das':
     spatial_filter = das_filter
 elif METHOD == 'capon':
@@ -39,23 +40,27 @@ elif METHOD == 'capon':
 
 t_tone = np.linspace(0, dur, int(fs*dur))
 chirp = signal.chirp(t_tone, hi_freq, t_tone[-1], low_freq)    
-sig = pow_two_pad_and_window(chirp, show=False)
+sig = pow_two_pad_and_window(chirp)
 
 C_AIR = 343
-min_distance = 7e-2
+min_distance = 10e-2
 discarded_samples = int(np.floor(((min_distance + 2.5e-2)*2)/C_AIR*fs))
+max_distance = 1
+max_index = int(np.floor(((max_distance + 2.5e-2)*2)/C_AIR*fs))
 
 def update(frame):
-    global curr_end
-    audio_data = sf.read('audio/20250513_18-46-35.wav', start=curr_end, stop=curr_end + offsets[frame])[0]
-    curr_end += offsets[frame]
+    print(frame)
+    # print(curr_end/fs)
+    audio_data, _ = sf.read('audio/20250514_15-16-35.wav', start=offsets[frame, 0], frames=offsets[frame, 1])
+    
+    # print(sr)
     dB_rms = 20*np.log10(np.mean(np.std(audio_data, axis=0)))    
     if dB_rms > output_threshold:
         filtered_signals = signal.correlate(audio_data, np.reshape(sig, (-1, 1)), 'same', method='fft')
         roll_filt_sigs = np.roll(filtered_signals, -len(sig)//2, axis=0)
         
         try:
-            distance, direct_path, obst_echo = sonar(roll_filt_sigs, discarded_samples, fs)
+            distance, direct_path, obst_echo = sonar(roll_filt_sigs, discarded_samples, max_index, fs)
             distance = distance*100 # [m] to [cm]
             # print('\nDistance: %.1f [cm]' % distance)                             
             # if distance == 0:
@@ -71,20 +76,18 @@ def update(frame):
                 doa_index = np.argmax(p_dB)
                 theta_hat = theta[doa_index]
                 if distance > 0:
-                    print('\nDistance: %.1f [cm] | DoA: %.2f [deg]' % (distance, theta_hat))            
+                    # print('\nDistance: %.1f [cm] | DoA: %.2f [deg]' % (distance, theta_hat))            
                     line.set_ydata(p_dB)
                     ax.set_ylim(min(p_dB), max(p_dB) + 6)
                     vline.set_xdata([np.deg2rad(theta_hat)])
-
+                    
+                    title.set_text('%.1f [cm], %.1f [s]' % (distance, offsets[frame, 0]/fs))
             return line, vline
         except ValueError:
             print('\nNo valid distance or DoA')
 
-global curr_end
-curr_end = 0
-
 fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
-ax.set_title('DaS Filter Output')
+title = ax.set_title('')
 # Shift axes by -90 degrees
 ax.set_theta_offset(np.pi/2)
 # Limit theta between -90 and 90 degrees
@@ -93,5 +96,6 @@ ax.set_ylim(-20, 40)
 ax.grid(False)
 line = ax.plot(np.linspace(-np.pi/2, np.pi/2, 73), 0*np.sin(np.linspace(-np.pi/2, np.pi/2, 73)))[0]
 vline = ax.axvline(0, 0, 30, color='red', linestyle='--')
-ani = FuncAnimation(fig, update,  frames=len(offsets), interval=0, cache_frame_data=False, repeat=False)
+# txt = plt.text(0, 0, '', ha='center', va='center', fontsize=12)
+ani = FuncAnimation(fig, update,  frames=len(offsets), interval=17, cache_frame_data=True, repeat=False)
 plt.show()
