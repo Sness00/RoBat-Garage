@@ -94,6 +94,30 @@ def shift_toward_point(points, p1, shift_cm, px_per_cm):
 
     return np.array(coordinates), np.array(distances)
 
+def draw_line_with_angle(start_point, direction_vector, distance_cm, pix_per_cm, angle_deg):
+    # Normalize the direction vector
+    direction_vector = direction_vector / np.linalg.norm(direction_vector)
+
+    # Convert angle to radians
+    angle_rad = -np.deg2rad(angle_deg)
+
+    # Rotation matrix (2D)
+    rotation_matrix = np.array([
+        [np.cos(angle_rad), -np.sin(angle_rad)],
+        [np.sin(angle_rad),  np.cos(angle_rad)]
+    ])
+
+    # Rotate the direction vector
+    rotated_vector = rotation_matrix @ direction_vector
+
+    # Scale the rotated vector by the distance
+    displacement = rotated_vector * distance_cm * pix_per_cm
+
+    # Calculate end point
+    end_point = (int(start_point[0] + displacement[0]), int(start_point[1] + displacement[1]))
+
+    return end_point
+
 def insert_between_large_diffs(arr):
     result = []
 
@@ -124,9 +148,9 @@ def pow_two_pad_and_window(vec, show=False):
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-camera_path = './videos/GX010518.mp4'
-robot_path = './audio/20250514_17-07-06.wav'
-offsets = np.load('./offsets/20250514_17-07-06_offsets.npy')
+camera_path = './videos/GX010520.mp4'
+robot_path = './audio/20250514_17-18-36.wav'
+offsets = np.load('./offsets/20250514_17-18-36_offsets.npy')
 video_fps = 60
 screen_width, screen_height = pag.size()
 robot_id = 0
@@ -144,14 +168,6 @@ with open(yaml_file, 'r') as file:
 # Load predefined dictionary
 aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_6X6_250)
 parameters = aruco.DetectorParameters()
-marker_length = 0.049  # Length of the marker's side in meters
-
-object_points = []  # 3D points in real world space
-object_points.append(np.array([[-marker_length/2, marker_length/2, 0], 
-                               [marker_length/2, marker_length/2, 0], 
-                               [marker_length/2, -marker_length/2, 0], 
-                               [-marker_length/2, -marker_length/2, 0]], dtype=np.float32))
-object_points = np.array(object_points, dtype='float32')
 
 # Loop through the video
 try:
@@ -176,7 +192,6 @@ try:
     print('Start frame: %d' % start_frame)
     video_frames = np.astype((offsets[:, 0]) / fs * video_fps + start_frame, np.int32)
     interp_video_frames = np.astype(insert_between_large_diffs(video_frames), np.int32)
-    print(video_frames.shape, interp_video_frames.shape)
 
     fs = 176400
     dur = 3e-3
@@ -196,9 +211,9 @@ try:
     sig = pow_two_pad_and_window(chirp)
 
     C_AIR = 343
-    min_distance = 10e-2
+    min_distance = 10e-2 # [m]
     discarded_samples = int(np.floor(((min_distance + 2.5e-2)*2)/C_AIR*fs))
-    max_distance = 1
+    max_distance = 1 # [m]
     max_index = int(np.floor(((max_distance + 2.5e-2)*2)/C_AIR*fs))
 
     def update(frame):
@@ -251,6 +266,8 @@ try:
         # print(frame_count)
         if frame_count == interp_video_frames[counter]:
             counter += 1
+            if counter >= len(interp_video_frames):
+                break
             if frame_count in video_frames: 
                 distance, doa = update(true_counter)
                 true_counter += 1
@@ -264,7 +281,7 @@ try:
             # Draw detected markers
             if ids is not None:
                 corners_array = np.squeeze(np.array(corners))
-                aruco.drawDetectedMarkers(frame, corners, ids)
+                # aruco.drawDetectedMarkers(frame, corners, ids)
                 try:
                     index = np.where(ids == robot_id)[0] # Find the index of the robot marker
                     # print(index)
@@ -323,9 +340,13 @@ try:
                             if (found_nearest and angle <= np.pi/2):
                                 # print distance and angle                                
                                 if distance != 0:
+                                    print('Time: %.1f [s]' % (frame_count/video_fps))
                                     print("Distance: %.1f [cm], Angle: %.1f [deg]" % (distance, doa))
                                     print("GT Distance: %.1f [cm], GT Angle: %.1f [deg]\n" % (sd, np.rad2deg(angle)))
-                                cv2.line(frame, mic_positions, closest_obstacle.astype(int), (255, 51, 20), 2)
+                                    cv2.arrowedLine(frame, mic_positions, closest_obstacle.astype(int), (255, 255, 0), 2)
+                                    # Draw the line
+                                    end_point = draw_line_with_angle(mic_positions, D41_normalized, distance, pixel_per_meters/100, doa)
+                                    cv2.arrowedLine(frame, mic_positions, end_point, (0, 255, 255), 2)
                                 # print angle and id of nearest obstacle
                                 # cv2.putText(frame, str(obst_ids[np.where(distances == sd)][0]), closest_obstacle.astype(int), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                                 # print(angle, frame_count)
@@ -334,6 +355,10 @@ try:
                             # Draw trajectory
                             for i in range(len(trajectory) - 1):
                                 cv2.line(frame, tuple(trajectory[i].astype(int)), tuple(trajectory[i + 1].astype(int)), (0, 255, 0), 2)
+                        # Add a legend for the two lines departing from the robot
+                        cv2.putText(frame, 'Ground truth', (int(100), int(100)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
+                        cv2.putText(frame, 'Estimated distance and direction', (int(100), int(200)), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+
                         # Display result
                         resized_frame = cv2.resize(frame, (screen_width, screen_height))
                         cv2.imshow('ArUco Tracker', resized_frame)
