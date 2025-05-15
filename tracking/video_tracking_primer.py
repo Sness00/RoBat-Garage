@@ -148,11 +148,22 @@ def pow_two_pad_and_window(vec, show=False):
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-file_name = '20250514_17-07-06'
+file_name = '20250515_14-16-46'
 
 camera_path = './videos/' + file_name + '.mp4'
 robot_path = './audio/' + file_name + '.wav'
-offsets = np.load('./offsets/' + file_name + '_offsets.npy')
+offsets_path = './offsets/' + file_name + '.yaml'
+
+with open(offsets_path, "r") as file:
+    try:
+        data = yaml.safe_load(file)  # Use safe_load to avoid potential security issues
+    except yaml.YAMLError as error:
+        print(f"Error loading YAML file: {error}")
+reading_points = data['reading_points']
+reading_points = np.array(reading_points)
+offsets = data['offsets']
+offsets = np.array(offsets)
+
 video_fps = 60
 screen_width, screen_height = pag.size()
 robot_id = 0
@@ -187,7 +198,7 @@ try:
     index = np.argmax(np.abs(xcorr))
     start_frame = int(index / sr * video_fps)
     print('Start frame: %d' % start_frame)
-    video_frames = np.astype((offsets[:, 0]) / fs * video_fps + start_frame, np.int32)
+    video_frames = np.astype((reading_points) / fs * video_fps + start_frame, np.int32)
     interp_video_frames = np.astype(insert_between_large_diffs(video_frames), np.int32)
 
     fs = 176400
@@ -213,7 +224,7 @@ try:
     max_index = int(np.floor(((max_distance + 2.5e-2)*2)/C_AIR*fs))
 
     def update(frame):
-        audio_data, _ = sf.read(robot_path, start=offsets[frame, 0], frames=offsets[frame, 1])
+        audio_data, _ = sf.read(robot_path, start=reading_points[frame], frames=offsets[frame])
         dB_rms = 20*np.log10(np.mean(np.std(audio_data, axis=0)))    
         if dB_rms > output_threshold:
             filtered_signals = signal.correlate(audio_data, np.reshape(sig, (-1, 1)), 'same', method='fft')
@@ -325,9 +336,6 @@ try:
                     # distances = np.linalg.norm(obst_centers - mic_positions, axis=1) - pixel_per_meters*0.032
                     obstacles, distances = shift_toward_point(obst_centers, mic_positions, 3.2, pixel_per_meters/100)
                     if len(distances) > 0:
-                        # print(distances)
-                        # closest_obstacle_index = np.argmin(distances)
-                        # compute angle between the robot and the closest obstacle
                         D41 = tl - bl
                         D14 = bl - tl
                         D41_normalized = D41 / np.linalg.norm(D41)

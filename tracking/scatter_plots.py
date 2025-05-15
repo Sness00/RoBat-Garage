@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-file_name = '20250514_17-07-06'
+file_name = '20250515_14-16-46'
 
 with open('./analysis/' + file_name + '.yaml', "r") as file:
     try:
@@ -21,7 +21,6 @@ angle_errors = data['angle_errors']
 
 # Convert lists to numpy arrays for easier manipulation
 obst_distances = np.array(obst_distances)
-print(len(obst_distances))
 distance_errors = np.array(distance_errors)
 obst_angles = np.array(obst_angles)
 angle_errors = np.array(angle_errors)
