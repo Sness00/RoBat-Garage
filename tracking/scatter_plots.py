@@ -5,9 +5,9 @@ from matplotlib import pyplot as plt
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-file_name = ''
+file_name = '20250514_17-07-06'
 
-with open(os.path.join('./analysis', file_name + '.yml'), "r") as file:
+with open('./analysis/' + file_name + '.yaml', "r") as file:
     try:
         data = yaml.safe_load(file)  # Use safe_load to avoid potential security issues
     except yaml.YAMLError as error:

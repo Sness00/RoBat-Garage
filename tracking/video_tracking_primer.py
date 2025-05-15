@@ -264,7 +264,7 @@ try:
                 'obstacle_angles': np.asarray(doas).tolist(),
                 'angle_errors': np.asarray(doa_error).tolist()
             }
-            with open(os.path.join('./analysis', file_name + '.yml'), "w") as f:
+            with open('./analysis/' + file_name + '.yaml', "w") as f:
                 yaml.dump(data, f)
             break
         if frame_count == interp_video_frames[counter]:
