@@ -148,9 +148,9 @@ def pow_two_pad_and_window(vec, show=False):
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-camera_path = './videos/GX010520.mp4'
-robot_path = './audio/20250514_17-18-36.wav'
-offsets = np.load('./offsets/20250514_17-18-36_offsets.npy')
+camera_path = './videos/GX010518.mp4'
+robot_path = './audio/20250514_17-07-06.wav'
+offsets = np.load('./offsets/20250514_17-07-06_offsets.npy')
 video_fps = 60
 screen_width, screen_height = pag.size()
 robot_id = 0
