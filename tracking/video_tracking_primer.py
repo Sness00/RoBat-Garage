@@ -148,9 +148,11 @@ def pow_two_pad_and_window(vec, show=False):
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-camera_path = './videos/GX010518.mp4'
-robot_path = './audio/20250514_17-07-06.wav'
-offsets = np.load('./offsets/20250514_17-07-06_offsets.npy')
+file_name = '20250514_17-07-06'
+
+camera_path = './videos/' + file_name + '.mp4'
+robot_path = './audio/' + file_name + '.wav'
+offsets = np.load('./offsets/' + file_name + '_offsets.npy')
 video_fps = 60
 screen_width, screen_height = pag.size()
 robot_id = 0
@@ -247,9 +249,23 @@ try:
     trajectory = np.zeros((0, 2), dtype=np.float32)
     counter = 0
     true_counter = 0
+
+    obst_distances = []
+    dist_error = []
+    doas = []
+    doa_error = []
+
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
+            data = {
+                'obstacle_distances': np.asarray(obst_distances).tolist(),
+                'distance_errors': np.asarray(dist_error).tolist(),
+                'obstacle_angles': np.asarray(doas).tolist(),
+                'angle_errors': np.asarray(doa_error).tolist()
+            }
+            with open(os.path.join('./analysis', file_name + '.yml'), "w") as f:
+                yaml.dump(data, f)
             break
         if frame_count == interp_video_frames[counter]:
             counter += 1
@@ -269,81 +285,93 @@ try:
                 # aruco.drawDetectedMarkers(frame, corners, ids)
                 try:
                     index = np.where(ids == robot_id)[0] # Find the index of the robot marker
-                    arena_mrkr_indx = {
-                        '12': np.where(ids == 12)[0], # Find the index of the arena markers
-                        '13': np.where(ids == 13)[0], # Find the index of the arena markers
-                        '14': np.where(ids == 14)[0], # Find the index of the arena markers
-                    } # bottom left of 12, top left of 13, top right of 14
-                    try: 
-                        corners_12 = corners_array[arena_mrkr_indx['12']]
-                        corners_13 = corners_array[arena_mrkr_indx['13']]
-                        corners_14 = corners_array[arena_mrkr_indx['14']]
+                    if len(index) == 0:
+                        raise ValueError('Robot marker not found')
+                    mask = np.ones(len(ids), dtype=bool)
+                    ind12 = np.where(ids == 12)[0]
+                    if len(ind12) > 0:
+                        mask[ind12] = False
+                    else:
+                        raise ValueError('Marker 12 not found')
+                    ind13 = np.where(ids == 13)[0]
+                    if len(ind13) > 0:
+                        mask[ind13] = False
+                    else:
+                        raise ValueError('Marker 13 not found')
+                    ind14 = np.where(ids == 14)[0]
+                    if len(ind14) > 0:
+                        mask[ind14] = False
+                    else:
+                        raise ValueError('Marker 14 not found')
+                    # bottom left of 12, top left of 13, top right of 14
+                    if len(ind12) > 0 and len(ind13) > 0 and len(ind14) > 0:
+                        corners_12 = corners_array[ind12]
+                        corners_13 = corners_array[ind13]
+                        corners_14 = corners_array[ind14]
                         pixel_per_meters = np.mean([np.linalg.norm(corners_12[:, 3] - corners_13[:, 0], axis=1)/arena_w, np.linalg.norm(corners_13[:, 0] - corners_14[:, 1], axis=1)/arena_l])
-                        center = np.mean(corners_array[index], axis=1)[0]
-                        trajectory = np.append(trajectory, np.array([[center[0], center[1]]]), axis=0)
-                        tl, tr, br, bl = np.squeeze(corners_array[index])
-                        mic_positions = np.astype(get_offset_point(center, tl, tr, offset=-pixel_per_meters*0.055), np.int32)
-                        
-                        mask = np.ones(len(ids), dtype=bool)
-                        mask[index] = False
-                        mask[list(arena_mrkr_indx.values())] = False
+                    center = np.mean(corners_array[index], axis=1)[0]
+                    trajectory = np.append(trajectory, np.array([[center[0], center[1]]]), axis=0)
+                    tl, tr, br, bl = np.squeeze(corners_array[index])
+                    mic_positions = np.astype(get_offset_point(center, tl, tr, offset=-pixel_per_meters*0.055), np.int32)
+                    mask[index] = False
 
-                        obst_ids = ids[mask]
-                        obst_corners = corners_array[mask]
+                    obst_ids = ids[mask]
+                    obst_corners = corners_array[mask]
 
-                        obst_centers = np.mean(obst_corners, axis=1)
-                        for c in obst_centers:
-                            cv2.circle(frame, c.astype(int), int(0.032*pixel_per_meters), (0, 0, 255), -1)
+                    obst_centers = np.mean(obst_corners, axis=1)
+                    for c in obst_centers:
+                        cv2.circle(frame, c.astype(int), int(0.032*pixel_per_meters), (0, 0, 255), -1)
 
-                        # distances = np.linalg.norm(obst_centers - mic_positions, axis=1) - pixel_per_meters*0.032
-                        obstacles, distances = shift_toward_point(obst_centers, mic_positions, 3.2, pixel_per_meters/100)
-                        if len(distances) > 0:
-                            # print(distances)
-                            # closest_obstacle_index = np.argmin(distances)
-                            # compute angle between the robot and the closest obstacle
-                            D41 = tl - bl
-                            D14 = bl - tl
-                            D41_normalized = D41 / np.linalg.norm(D41)
-                            sorted_distances = np.sort(distances)
-                            found_nearest = False
-                            for sd in sorted_distances:
-                                V_marker_space = np.squeeze(obstacles[np.where(distances == sd)]) - mic_positions
-                                dot_product = np.dot(D41_normalized, V_marker_space)
-                                cross_product = cross2d(V_marker_space, D14)
-                                verse = -1 if cross_product > 0 else 1
-                                angle = verse*np.arccos(dot_product / (np.linalg.norm(V_marker_space)))
-                                # draw a line from the robot to the closest obstacle
-                                if np.abs(angle) <= np.pi/2:               
-                                    closest_obstacle = np.squeeze(obstacles[np.where(distances == sd)])
-                                    found_nearest = True
-                                    break
-                            if (found_nearest and angle <= np.pi/2):
-                                # print distance and angle                                
-                                if distance != 0:
-                                    print('Time: %.1f [s]' % (frame_count/video_fps))
-                                    print("Distance: %.1f [cm], Angle: %.1f [deg]" % (distance, doa))
-                                    print("GT Distance: %.1f [cm], GT Angle: %.1f [deg]\n" % (sd, np.rad2deg(angle)))
-                                    cv2.arrowedLine(frame, mic_positions, closest_obstacle.astype(int), (255, 255, 0), 2)
-                                    # Draw the line
-                                    end_point = draw_line_with_angle(mic_positions, D41_normalized, distance, pixel_per_meters/100, doa)
-                                    cv2.arrowedLine(frame, mic_positions, end_point, (0, 255, 255), 2)
-                    
-                        if len(trajectory) > 2:
-                            # Draw trajectory
-                            for i in range(len(trajectory) - 1):
-                                cv2.line(frame, tuple(trajectory[i].astype(int)), tuple(trajectory[i + 1].astype(int)), (0, 255, 0), 2)
-                        # Add a legend for the two lines departing from the robot
-                        cv2.putText(frame, 'Ground truth', (int(100), int(100)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
-                        cv2.putText(frame, 'Estimated distance and direction', (int(100), int(200)), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+                    # distances = np.linalg.norm(obst_centers - mic_positions, axis=1) - pixel_per_meters*0.032
+                    obstacles, distances = shift_toward_point(obst_centers, mic_positions, 3.2, pixel_per_meters/100)
+                    if len(distances) > 0:
+                        # print(distances)
+                        # closest_obstacle_index = np.argmin(distances)
+                        # compute angle between the robot and the closest obstacle
+                        D41 = tl - bl
+                        D14 = bl - tl
+                        D41_normalized = D41 / np.linalg.norm(D41)
+                        sorted_distances = np.sort(distances)
+                        found_nearest = False
+                        for sd in sorted_distances:
+                            V_marker_space = np.squeeze(obstacles[np.where(distances == sd)]) - mic_positions
+                            dot_product = np.dot(D41_normalized, V_marker_space)
+                            cross_product = cross2d(V_marker_space, D14)
+                            verse = -1 if cross_product > 0 else 1
+                            angle = verse*np.arccos(dot_product / (np.linalg.norm(V_marker_space)))
+                            # draw a line from the robot to the closest obstacle
+                            if np.abs(angle) <= np.pi/2:               
+                                closest_obstacle = np.squeeze(obstacles[np.where(distances == sd)])
+                                found_nearest = True
+                                break
+                        if (found_nearest and angle <= np.pi/2):
+                            # print distance and angle                                
+                            if distance != 0:
+                                # print('Time: %.1f [s]' % (frame_count/video_fps))
+                                # print("Distance: %.1f [cm], Angle: %.1f [deg]" % (distance, doa))
+                                # print("GT Distance: %.1f [cm], GT Angle: %.1f [deg]\n" % (sd, np.rad2deg(angle)))
+                                obst_distances.append(sd)
+                                dist_error.append(sd - distance)
+                                doas.append(np.rad2deg(angle))
+                                doa_error.append(np.rad2deg(angle) - doa)
+                                cv2.arrowedLine(frame, mic_positions, closest_obstacle.astype(int), (255, 255, 0), 2)
+                                # Draw the line
+                                end_point = draw_line_with_angle(mic_positions, D41_normalized, distance, pixel_per_meters/100, doa)
+                                cv2.arrowedLine(frame, mic_positions, end_point, (0, 255, 255), 2)
+                
+                    if len(trajectory) > 2:
+                        # Draw trajectory
+                        for i in range(len(trajectory) - 1):
+                            cv2.line(frame, tuple(trajectory[i].astype(int)), tuple(trajectory[i + 1].astype(int)), (0, 255, 0), 2)
+                    # Add a legend for the two lines departing from the robot
+                    cv2.putText(frame, 'Ground truth', (int(100), int(100)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
+                    cv2.putText(frame, 'Estimated distance and direction', (int(100), int(200)), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
 
-                        # Display result
-                        resized_frame = cv2.resize(frame, (screen_width, screen_height))
-                        cv2.imshow('ArUco Tracker', resized_frame)
-                    except:
-                        print("No arena marker detected")
-                        pass
-                except:
-                    print("No robot marker detected")
+                    # Display result
+                    resized_frame = cv2.resize(frame, (screen_width, screen_height))
+                    cv2.imshow('ArUco Tracker', resized_frame)
+                except Exception:
+                    traceback.print_exc()
                     pass
         frame_count += 1
         if cv2.waitKey(1) & 0xFF == ord('q'):
