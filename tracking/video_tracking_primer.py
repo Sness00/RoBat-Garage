@@ -160,11 +160,6 @@ arena_l = 1.7
 video_path = camera_path
 cap = cv2.VideoCapture(video_path)
 
-# Camera calibration parameters
-yaml_file = "calibration_matrix.yaml"
-with open(yaml_file, 'r') as file:
-    data = yaml.safe_load(file)
-
 # Load predefined dictionary
 aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_6X6_250)
 parameters = aruco.DetectorParameters()
@@ -198,7 +193,6 @@ try:
     hi_freq = 60e3
     low_freq = 20e3
     output_threshold = -50 # [dB]
-    distance_threshold = 20 # [cm]
 
     METHOD = 'das' # 'das', 'capon'
     if METHOD == 'das':
@@ -217,15 +211,11 @@ try:
     max_index = int(np.floor(((max_distance + 2.5e-2)*2)/C_AIR*fs))
 
     def update(frame):
-        # print(curr_end/fs)
         audio_data, _ = sf.read(robot_path, start=offsets[frame, 0], frames=offsets[frame, 1])
-        # video_frame = int(offsets[frame, 0] / fs * video_fps) + start_frame
-        # print('Video frame: %d' % video_frame)  
         dB_rms = 20*np.log10(np.mean(np.std(audio_data, axis=0)))    
         if dB_rms > output_threshold:
             filtered_signals = signal.correlate(audio_data, np.reshape(sig, (-1, 1)), 'same', method='fft')
-            roll_filt_sigs = np.roll(filtered_signals, -len(sig)//2, axis=0)
-            
+            roll_filt_sigs = np.roll(filtered_signals, -len(sig)//2, axis=0)            
             try:
                 distance, direct_path, obst_echo = sonar(roll_filt_sigs, discarded_samples, max_index, fs)
                 distance = distance*100 # [m] to [cm]
@@ -239,8 +229,7 @@ try:
                 if direct_path != obst_echo:
                     doa_index = np.argmax(p_dB)
                     theta_hat = theta[doa_index]
-                    if distance > 0:
-                        # print('\nDistance: %.1f [cm] | DoA: %.2f [deg]' % (distance, theta_hat))            
+                    if distance > 0:            
                         return distance, theta_hat
                     else: return 0, 0
                 else: return 0, 0
@@ -262,8 +251,6 @@ try:
         ret, frame = cap.read()
         if not ret:
             break
-        # print(interp_video_frames[counter], frame_count)
-        # print(frame_count)
         if frame_count == interp_video_frames[counter]:
             counter += 1
             if counter >= len(interp_video_frames):
@@ -275,8 +262,6 @@ try:
             # Detect markers
             detector = aruco.ArucoDetector(aruco_dict, parameters)
             corners, ids, _ = detector.detectMarkers(gray)
-
-            # print(f"Frame {frame_count}: Detected IDs: {ids}")
             
             # Draw detected markers
             if ids is not None:
@@ -284,7 +269,6 @@ try:
                 # aruco.drawDetectedMarkers(frame, corners, ids)
                 try:
                     index = np.where(ids == robot_id)[0] # Find the index of the robot marker
-                    # print(index)
                     arena_mrkr_indx = {
                         '12': np.where(ids == 12)[0], # Find the index of the arena markers
                         '13': np.where(ids == 13)[0], # Find the index of the arena markers
@@ -328,15 +312,11 @@ try:
                                 cross_product = cross2d(V_marker_space, D14)
                                 verse = -1 if cross_product > 0 else 1
                                 angle = verse*np.arccos(dot_product / (np.linalg.norm(V_marker_space)))
-                                # print(f"Angle: {np.rad2deg(angle)}")
-                                # print(np.rad2deg(angle))
                                 # draw a line from the robot to the closest obstacle
-                                if np.abs(angle) <= np.pi/2:
-                                    # print(f"Angle: {np.rad2deg(angle)}")                
+                                if np.abs(angle) <= np.pi/2:               
                                     closest_obstacle = np.squeeze(obstacles[np.where(distances == sd)])
                                     found_nearest = True
                                     break
-                            # print(np.rad2deg(angle))
                             if (found_nearest and angle <= np.pi/2):
                                 # print distance and angle                                
                                 if distance != 0:
@@ -347,9 +327,6 @@ try:
                                     # Draw the line
                                     end_point = draw_line_with_angle(mic_positions, D41_normalized, distance, pixel_per_meters/100, doa)
                                     cv2.arrowedLine(frame, mic_positions, end_point, (0, 255, 255), 2)
-                                # print angle and id of nearest obstacle
-                                # cv2.putText(frame, str(obst_ids[np.where(distances == sd)][0]), closest_obstacle.astype(int), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                                # print(angle, frame_count)
                     
                         if len(trajectory) > 2:
                             # Draw trajectory
