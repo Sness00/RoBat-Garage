@@ -5,6 +5,7 @@ __pycache__
 *.rpp-bak
 sweeps/
 gras_recording/
+sanken_recording/
 knowles_array_directivity/sweeps_and_calibration/
 sanken_CO-100K/
 **/*.mp4
