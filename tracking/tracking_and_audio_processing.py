@@ -148,7 +148,7 @@ def pow_two_pad_and_window(vec, show=False):
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-file_name = '20250514_17-07-06'
+file_name = '20250516_15-25-28'
 
 camera_path = './videos/' + file_name + '.mp4'
 robot_path = './audio/' + file_name + '.wav'
@@ -354,17 +354,14 @@ try:
                     center = np.mean(corners_array[index], axis=1)[0]
                     trajectory = np.append(trajectory, np.array([[center[0], center[1]]]), axis=0)
                     tl, tr, br, bl = np.squeeze(corners_array[index])
-                    mic_positions = np.astype(get_offset_point(center, tl, tr, offset=-pixel_per_meters*0.055), np.int32)
+                    mic_positions = np.astype(get_offset_point(center, tl, tr, offset=-pixel_per_meters*0.07), np.int32)
                     mask[index] = False
 
                     obst_ids = ids[mask]
                     obst_corners = corners_array[mask]
 
                     obst_centers = np.mean(obst_corners, axis=1)
-                    for c in obst_centers:
-                        cv2.circle(frame, c.astype(int), int(0.032*pixel_per_meters), (0, 0, 255), -1)
 
-                    # distances = np.linalg.norm(obst_centers - mic_positions, axis=1) - pixel_per_meters*0.032
                     obstacles, distances = shift_toward_point(obst_centers, mic_positions, 3.2, pixel_per_meters/100)
                     if len(distances) > 0:
                         D41 = tl - bl
