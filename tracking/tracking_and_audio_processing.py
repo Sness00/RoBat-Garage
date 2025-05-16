@@ -167,8 +167,8 @@ offsets = np.array(offsets)
 video_fps = 60
 screen_width, screen_height = pag.size()
 robot_id = 0
-arena_w = 1
-arena_l = 1.7
+arena_w = 1.55
+arena_l = 2
 # Load video file
 video_path = camera_path
 
