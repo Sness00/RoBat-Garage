@@ -148,7 +148,7 @@ def pow_two_pad_and_window(vec, show=False):
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-file_name = '20250516_15-25-28'
+file_name = '20250516_16-43-26'
 
 camera_path = './videos/' + file_name + '.mp4'
 robot_path = './audio/' + file_name + '.wav'
@@ -311,15 +311,6 @@ try:
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
-            cv2.imwrite('video_audio_output.jpg', resized_frame)
-            data = {
-                'obstacle_distances': np.asarray(obst_distances).tolist(),
-                'distance_errors': np.asarray(dist_error).tolist(),
-                'obstacle_angles': np.asarray(doas).tolist(),
-                'angle_errors': np.asarray(doa_error).tolist()
-            }
-            with open('./analysis/' + file_name + '.yaml', "w") as f:
-                yaml.dump(data, f)
             break
         if frame_count == interp_video_frames[counter]:
             counter += 1
@@ -415,5 +406,14 @@ try:
 except Exception as e:
     print(frame_count, e)
     traceback.print_exc()
+cv2.imwrite(file_name + '.jpg', resized_frame)
+data = {
+    'obstacle_distances': np.asarray(obst_distances).tolist(),
+    'distance_errors': np.asarray(dist_error).tolist(),
+    'obstacle_angles': np.asarray(doas).tolist(),
+    'angle_errors': np.asarray(doa_error).tolist()
+}
+with open('./analysis/' + file_name + '.yaml', "w") as f:
+    yaml.dump(data, f)
 cap.release()
 cv2.destroyAllWindows()
