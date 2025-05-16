@@ -16,3 +16,5 @@ offsets/
 videos/
 audio/
 analysis/
+plots/
+*.jpg

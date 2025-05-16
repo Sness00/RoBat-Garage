@@ -148,7 +148,7 @@ def pow_two_pad_and_window(vec, show=False):
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-file_name = '20250515_14-16-46'
+file_name = '20250514_17-07-06'
 
 camera_path = './videos/' + file_name + '.mp4'
 robot_path = './audio/' + file_name + '.wav'
@@ -171,7 +171,7 @@ arena_w = 1
 arena_l = 1.7
 # Load video file
 video_path = camera_path
-cap = cv2.VideoCapture(video_path)
+
 
 # Load predefined dictionary
 aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_6X6_250)
@@ -218,7 +218,7 @@ try:
     sig = pow_two_pad_and_window(chirp)
 
     C_AIR = 343
-    min_distance = 10e-2 # [m]
+    min_distance = 8e-2 # [m]
     discarded_samples = int(np.floor(((min_distance + 2.5e-2)*2)/C_AIR*fs))
     max_distance = 1 # [m]
     max_index = int(np.floor(((max_distance + 2.5e-2)*2)/C_AIR*fs))
@@ -255,6 +255,48 @@ try:
 except ffmpeg.Error as e:
     print('ffmpeg error:', e.stderr.decode(), file=sys.stderr)
     sys.exit(1)
+cap = cv2.VideoCapture(video_path)
+
+try:
+    pixel_per_meters = 0
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        # Detect markers
+        detector = aruco.ArucoDetector(aruco_dict, parameters)
+        corners, ids, _ = detector.detectMarkers(gray)
+        
+        # Draw detected markers
+        if ids is not None:
+            corners_array = np.squeeze(np.array(corners))
+            try:
+                ind12 = np.where(ids == 12)[0]
+                if len(ind12) == 0:
+                    raise ValueError('Marker 12 not found')
+                ind13 = np.where(ids == 13)[0]
+                if len(ind13) == 0:
+                    raise ValueError('Marker 13 not found')
+                ind14 = np.where(ids == 14)[0]
+                if len(ind14) == 0:
+                    raise ValueError('Marker 14 not found')
+                # bottom left of 12, top left of 13, top right of 14                
+                corners_12 = corners_array[ind12]
+                corners_13 = corners_array[ind13]
+                corners_14 = corners_array[ind14]
+                pixel_per_meters = np.mean([np.linalg.norm(corners_12[:, 3] - corners_13[:, 0], axis=1)/arena_w, np.linalg.norm(corners_13[:, 0] - corners_14[:, 1], axis=1)/arena_l])
+                print('Pixel per meters: %.2f' % pixel_per_meters)
+            except ValueError:
+                print('Marker 12, 13 or 14 not found')
+        if pixel_per_meters > 0:
+            break
+except:
+    print('Error reading video file:', e)
+    sys.exit(1)
+cap.release()
+
+cap = cv2.VideoCapture(video_path)
 try:
     frame_count = 0
     trajectory = np.zeros((0, 2), dtype=np.float32)
@@ -269,6 +311,7 @@ try:
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
+            cv2.imwrite('video_audio_output.jpg', resized_frame)
             data = {
                 'obstacle_distances': np.asarray(obst_distances).tolist(),
                 'distance_errors': np.asarray(dist_error).tolist(),
@@ -302,24 +345,12 @@ try:
                     ind12 = np.where(ids == 12)[0]
                     if len(ind12) > 0:
                         mask[ind12] = False
-                    else:
-                        raise ValueError('Marker 12 not found')
                     ind13 = np.where(ids == 13)[0]
                     if len(ind13) > 0:
                         mask[ind13] = False
-                    else:
-                        raise ValueError('Marker 13 not found')
                     ind14 = np.where(ids == 14)[0]
                     if len(ind14) > 0:
                         mask[ind14] = False
-                    else:
-                        raise ValueError('Marker 14 not found')
-                    # bottom left of 12, top left of 13, top right of 14
-                    if len(ind12) > 0 and len(ind13) > 0 and len(ind14) > 0:
-                        corners_12 = corners_array[ind12]
-                        corners_13 = corners_array[ind13]
-                        corners_14 = corners_array[ind14]
-                        pixel_per_meters = np.mean([np.linalg.norm(corners_12[:, 3] - corners_13[:, 0], axis=1)/arena_w, np.linalg.norm(corners_13[:, 0] - corners_14[:, 1], axis=1)/arena_l])
                     center = np.mean(corners_array[index], axis=1)[0]
                     trajectory = np.append(trajectory, np.array([[center[0], center[1]]]), axis=0)
                     tl, tr, br, bl = np.squeeze(corners_array[index])

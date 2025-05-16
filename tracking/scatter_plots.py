@@ -5,7 +5,11 @@ from matplotlib import pyplot as plt
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-file_name = '20250515_14-16-46'
+file_name = '20250514_17-07-06'
+# Saving directory
+dir_name = './plots/'
+if not os.path.exists(dir_name):
+    os.makedirs(dir_name)
 
 with open('./analysis/' + file_name + '.yaml', "r") as file:
     try:
@@ -15,6 +19,7 @@ with open('./analysis/' + file_name + '.yaml', "r") as file:
 
 # Extracting the data
 obst_distances = data['obstacle_distances']
+print(len(obst_distances))
 distance_errors = data['distance_errors']
 obst_angles = data['obstacle_angles']
 angle_errors = data['angle_errors']
@@ -22,11 +27,15 @@ angle_errors = data['angle_errors']
 # Convert lists to numpy arrays for easier manipulation
 obst_distances = np.array(obst_distances)
 distance_errors = np.array(distance_errors)
+dst_err_mean = np.mean(distance_errors)
+dst_err_std = np.std(distance_errors)
 obst_angles = np.array(obst_angles)
 angle_errors = np.array(angle_errors)
+ang_err_mean = np.mean(angle_errors)
+ang_err_std = np.std(angle_errors)
 
 # Create a scatter plot for distance errors
-plt.figure()
+plt.figure(figsize=(12, 8))
 plt.subplot(2, 2, 1)
 plt.scatter(obst_distances, distance_errors, color='blue', alpha=0.5)
 plt.title('Distance Errors vs Obstacle Distances')
@@ -51,6 +60,10 @@ for body in vp1['bodies']:
 # Set means line color to black
 if 'cmeans' in vp1:
     vp1['cmeans'].set_color('black')
+plt.text(0.2, 0.2, f'Mean: {dst_err_mean:.2f}cm\nStd: {dst_err_std:.2f}cm', 
+         horizontalalignment='center', verticalalignment='center', transform=plt.gca().transAxes)
+# Hide the x-axis label
+plt.xticks([])
 plt.title('Distance Error')
 plt.ylabel('Distance Errors (cm)')
 plt.grid()
@@ -64,9 +77,13 @@ for body in vp2['bodies']:
 # Set means line color to black
 if 'cmeans' in vp2:
     vp2['cmeans'].set_color('black')
+plt.text(0.2, 0.2, f'Mean: {ang_err_mean:.2f}°\nStd: {ang_err_std:.2f}°', 
+         horizontalalignment='center', verticalalignment='center', transform=plt.gca().transAxes)
 plt.title('Angle Error')
 plt.ylabel('Angle Errors (degrees)')
+plt.xticks([])
 plt.grid()
 plt.tight_layout()
+# Save the figure
+plt.savefig(dir_name + file_name + '.png', dpi=300, bbox_inches='tight')
 plt.show()
-
