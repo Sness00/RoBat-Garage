@@ -148,7 +148,7 @@ def pow_two_pad_and_window(vec, show=False):
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-file_name = '20250516_15-59-38'
+file_name = '20250519_14-31-54'
 
 camera_path = './videos/' + file_name + '.mp4'
 robot_path = './audio/' + file_name + '.wav'

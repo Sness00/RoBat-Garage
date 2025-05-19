@@ -9,7 +9,7 @@ results_dir = './plots/'
 if not os.path.exists(results_dir):
     os.makedirs(results_dir)
 
-data_dir = './analysis/'
+data_dir = './non_blind_analysis/'
 
 data_files = os.listdir(data_dir)
 # Filter out non-YAML files
@@ -21,7 +21,7 @@ obst_angles = []
 angle_errors = []
 
 for file_name in data_files:
-    with open('./analysis/' + file_name, "r") as file:
+    with open(data_dir + file_name, "r") as file:
         try:
             data = yaml.safe_load(file)  # Use safe_load to avoid potential security issues
         except yaml.YAMLError as error:
