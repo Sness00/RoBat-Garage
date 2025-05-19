@@ -4,13 +4,28 @@ from matplotlib import pyplot as plt
 from scipy import signal, fft
 import os
 
+# def extract_noise_floor(files, fs, apply_symmetry=False):
+#     cut_dir = 'noise_floor'
+#     if not os.path.exists(rec_dir + '/' + cut_dir):
+#         os.makedirs(rec_dir + '/' + cut_dir)
+#     for file_name in files:
+#         print(file_name)
+#         x = sf.read(rec_dir + '/' + file_name, start=int(fs), frames=int(fs*0.01))[0]
+#         sf.write(rec_dir + '/' + cut_dir + '/' + file_name, x, int(fs))
+#         if apply_symmetry:
+#             if int(file_name[0:3]) > 0 and int(file_name[0:3]) < 180:
+#                     x_symm = x
+#                     file_name_symm = str(360 - int(file_name[0:3])) + 'deg' + '.wav'
+#                     sf.write(rec_dir + '/' + cut_dir + '/' + file_name_symm, x_symm, int(fs))
+
 if __name__ == '__main__':
     os.chdir(os.path.abspath(os.path.dirname(__file__)))
     PREPROCESS = False
+    SNR = True
     IN_BANDS = False
     DIR = './recordings/'
     CUT_DIR = 'mic_'
-    series = 2
+    series = 1
     fs = 192000 # Hz
     durn = 3e-3
     t = np.linspace(0, durn, int(fs*durn))
@@ -20,6 +35,7 @@ if __name__ == '__main__':
     sig = 0.8*sweep
     
     if PREPROCESS:
+        # Extract signals
         audio_files = [f for f in os.listdir(DIR) if f.endswith('.wav')]
         for i in np.arange(8):
             save_dir = os.path.join('series_' + str(series), CUT_DIR + str(i+1))
@@ -36,6 +52,51 @@ if __name__ == '__main__':
                 for n, idx in enumerate(idxs[5*(series-1):5*series]):
                     x_trimmed = x[idx-384:idx + int(durn*fs) + 384]
                     sf.write(save_dir + '/' + f[0:3] + 'deg_' + str(n+1) + '.wav', x_trimmed, int(fs))
+
+        # Extract noise floor
+        audio_files = [f for f in os.listdir(DIR) if f.endswith('.wav')]
+        for i in np.arange(8):
+            save_dir = os.path.join('noise_floor', CUT_DIR + str(i+1))
+            print(save_dir)
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+            for f in audio_files:
+                x = sf.read(os.path.join(DIR, f), start=int(0.01*fs), frames=int(fs*0.01))[0]
+                x = x[:, i]
+                sf.write(save_dir + '/' + f[0:3] + 'deg' + '.wav', x, int(fs))
+    
+    if SNR:
+        fig, ax = plt.subplots(8, 1)
+        plt.subplots_adjust(hspace=0.5, wspace=0.5)
+        plt.suptitle('SNR - Knowles SPH0641LU4H-1 array') 
+        SIG_DIR = './series_' + str(series) + '/' + CUT_DIR  # Directory containing the audio files        
+        NOISE_DIR = './noise_floor/' + CUT_DIR  # Directory containing the audio files
+       
+       
+        for k in np.arange(8):
+            snrs = []
+            signal_files = [f for f in os.listdir(SIG_DIR + str(k+1)) if f.endswith('.wav')]
+            noise_files = os.listdir(NOISE_DIR + str(k+1))
+            for i in np.arange(36):
+                noise = sf.read(NOISE_DIR + str(k+1) + './' + noise_files[i])[0]
+                snr = 0
+                for j in np.arange(5*i, 5*(i + 1)):
+                    sig = sf.read(SIG_DIR + str(k+1) + './' + signal_files[j])[0]
+                    # Compute the SNR
+                    snr += 10 * np.log10(np.mean(sig**2) / np.mean(noise**2))
+                snrs.append(snr / 5)
+            print(np.array(snrs).shape)
+            
+            ax[k].stem(np.linspace(0, 350, 36), snrs, markerfmt="o", basefmt=" ")
+            # plt.title("SNR - Senscomp Series 7000 Transducer")
+            ax[k].set_xlabel("Angle [deg]")
+            ax[k].set_ylabel("SNR [dB]")
+            ax[k].grid()
+            ax[k].set_title("Microphone " + str(k+1))
+        plt.tight_layout()
+        plt.show()
+        
+
 
     NFFT = 2048
     theta = np.linspace(0, 350, 36)

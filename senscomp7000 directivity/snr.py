@@ -1,5 +1,5 @@
 import os
-import soundfile
+import soundfile as sf
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy import fft
@@ -15,10 +15,10 @@ noise_files = os.listdir(NOISE_DIR)
 
 snrs = []
 for i in np.arange(36):
-    noise = soundfile.read(NOISE_DIR + noise_files[i])[0]
+    noise = sf.read(NOISE_DIR + noise_files[i])[0]
     snr = 0
     for j in np.arange(5*i, 5*(i + 1)):
-        signal = soundfile.read(SIG_DIR + signal_files[j])[0]
+        signal = sf.read(SIG_DIR + signal_files[j])[0]
         # Compute the SNR
         snr += 10 * np.log10(np.mean(signal**2) / np.mean(noise**2))
     snrs.append(snr / 5)
