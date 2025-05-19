@@ -148,15 +148,11 @@ def pow_two_pad_and_window(vec, show=False):
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-file_name = '20250516_16-43-26'
+file_name = '20250516_15-59-38'
 
 camera_path = './videos/' + file_name + '.mp4'
 robot_path = './audio/' + file_name + '.wav'
 offsets_path = './offsets/' + file_name + '.yaml'
-
-results_dir = './non_blind_analysis/'
-if not os.path.exists(results_dir):
-    os.makedirs(results_dir)
 
 with open(offsets_path, "r") as file:
     try:
@@ -171,10 +167,6 @@ offsets = np.array(offsets)
 video_fps = 60
 screen_width, screen_height = pag.size()
 robot_id = 0
-# arena_w = 1
-# arena_l = 1.7
-marker_mic_distance = 0.07
-# marker_mic_distance = 0.055
 arena_w = 1.55
 arena_l = 2
 # Load video file
@@ -337,81 +329,71 @@ try:
                 corners_array = np.squeeze(np.array(corners))
                 # aruco.drawDetectedMarkers(frame, corners, ids)
                 try:
-                    mask = np.ones(len(ids), dtype=bool)
-
                     index = np.where(ids == robot_id)[0] # Find the index of the robot marker
                     if len(index) == 0:
-                        raise ValueError('Robot marker not found')                    
-                    mask[index] = False
-
-                    ind12 = np.where(ids == 12)[0]
-                    if len(ind12) > 0:
-                        mask[ind12] = False
-                    ind13 = np.where(ids == 13)[0]
-                    if len(ind13) > 0:
-                        mask[ind13] = False
-                    ind14 = np.where(ids == 14)[0]
-                    if len(ind14) > 0:
-                        mask[ind14] = False
-
+                        raise ValueError('Robot marker not found')
                     center = np.mean(corners_array[index], axis=1)[0]
                     trajectory = np.append(trajectory, np.array([[center[0], center[1]]]), axis=0)
-                    tl, tr, br, bl = np.squeeze(corners_array[index])
-                    mic_positions = np.astype(get_offset_point(center, tl, tr, offset=-pixel_per_meters*marker_mic_distance), np.int32)
                     
+                    if distance != 0:
+                        mask = np.ones(len(ids), dtype=bool)
+                        mask[index] = False
+                        ind12 = np.where(ids == 12)[0]
+                        if len(ind12) > 0:
+                            mask[ind12] = False
+                        ind13 = np.where(ids == 13)[0]
+                        if len(ind13) > 0:
+                            mask[ind13] = False
+                        ind14 = np.where(ids == 14)[0]
+                        if len(ind14) > 0:
+                            mask[ind14] = False                    
+                        tl, tr, br, bl = np.squeeze(corners_array[index])
+                        mic_positions = np.astype(get_offset_point(center, tl, tr, offset=-pixel_per_meters*0.07), np.int32)                       
 
-                    obst_ids = ids[mask]
-                    obst_corners = corners_array[mask]
+                        obst_ids = ids[mask]
+                        obst_corners = corners_array[mask]
 
-                    obst_centers = np.mean(obst_corners, axis=1)
+                        obst_centers = np.mean(obst_corners, axis=1)
 
-                    obstacles, distances = shift_toward_point(obst_centers, mic_positions, 3.2, pixel_per_meters/100)
-                    if len(distances) > 0:
-                        D41 = tl - bl
-                        D14 = bl - tl
-                        D41_normalized = D41 / np.linalg.norm(D41)
-                        # sorted_distances = np.sort(distances)
-                        # found_nearest = False
-                        # for sd in sorted_distances:
-                        #     V_marker_space = np.squeeze(obstacles[np.where(distances == sd)]) - mic_positions
-                        #     dot_product = np.dot(D41_normalized, V_marker_space)
-                        #     cross_product = cross2d(V_marker_space, D14)
-                        #     verse = -1 if cross_product > 0 else 1
-                        #     angle = verse*np.arccos(dot_product / (np.linalg.norm(V_marker_space)))
-                        #     if np.abs(angle) <= np.pi/2:               
-                        #         closest_obstacle = np.squeeze(obstacles[np.where(distances == sd)])
-                        #         found_nearest = True
-                        #         break
-                        if distance != 0:
-                            candidate_obstacles_indxs = np.where(np.abs(distances - distance) < 5)[0]
-                            if len(candidate_obstacles_indxs) > 0:
-                                candidate_obstacles = obstacles[candidate_obstacles_indxs]
-                                found_nearest = False
-                                for obstacle in candidate_obstacles:
-                                    V_marker_space = obstacle - mic_positions
-                                    dot_product = np.dot(D41_normalized, V_marker_space)
-                                    cross_product = cross2d(V_marker_space, D14)
-                                    verse = -1 if cross_product > 0 else 1
-                                    angle = verse*np.arccos(dot_product / (np.linalg.norm(V_marker_space)))
-                                    if np.abs(angle) <= np.pi/2:
-                                        if np.abs(np.rad2deg(angle) - doa) < 30:               
-                                            closest_obstacle = obstacle
-                                            sd = distances[np.where(obstacles == obstacle)[0]][0]
-                                            found_nearest = True
-                                            break
-                                if (found_nearest and angle <= np.pi/2):
+                        obstacles, distances = shift_toward_point(obst_centers, mic_positions, 3.2, pixel_per_meters/100)
+                        min_angle_error = np.inf
+                        min_distance_error = np.inf
+                        min_err = min_angle_error + min_distance_error
+                        if len(distances) > 0:
+                            D41 = tl - bl
+                            D14 = bl - tl
+                            D41_normalized = D41 / np.linalg.norm(D41)
+                            sorted_distances = np.sort(distances)
+                            found_nearest = False
+                            for sd in sorted_distances:
+                                V_marker_space = np.squeeze(obstacles[np.where(distances == sd)]) - mic_positions
+                                dot_product = np.dot(D41_normalized, V_marker_space)
+                                cross_product = cross2d(V_marker_space, D14)
+                                verse = -1 if cross_product > 0 else 1
+                                angle = verse*np.arccos(dot_product / (np.linalg.norm(V_marker_space)))
+                                # draw a line from the robot to the closest obstacle
+                                if (np.abs(np.rad2deg(angle) - doa) + np.abs(sd - distance) < min_err):               
+                                    closest_obstacle = np.squeeze(obstacles[np.where(distances == sd)])
+                                    min_angle_error = np.abs(np.rad2deg(angle) - doa)
+                                    min_distance_error = np.abs(sd - distance)
+                                    min_err = min_angle_error + min_distance_error
+                                    ind_obst_distance = sd
+                                    ind_obst_angle = np.rad2deg(angle)
+                                    found_nearest = True
+                            if found_nearest:
                                 # print distance and angle                                
-                                        print('Time: %.1f [s]' % (frame_count/video_fps))
-                                        print("Distance: %.1f [cm], Angle: %.1f [deg]" % (distance, doa))
-                                        print("GT Distance: %.1f [cm], GT Angle: %.1f [deg]\n" % (sd, np.rad2deg(angle)))
-                                        obst_distances.append(sd)
-                                        dist_error.append(sd - distance)
-                                        doas.append(np.rad2deg(angle))
-                                        doa_error.append(np.rad2deg(angle) - doa)
-                                        cv2.arrowedLine(frame, mic_positions, closest_obstacle.astype(int), (255, 255, 0), 2)
-                                        # Draw the line
-                                        end_point = draw_line_with_angle(mic_positions, D41_normalized, distance, pixel_per_meters/100, doa)
-                                        cv2.arrowedLine(frame, mic_positions, end_point, (0, 255, 255), 2)
+                                
+                                # print('Time: %.1f [s]' % (frame_count/video_fps))
+                                # print("Distance: %.1f [cm], Angle: %.1f [deg]" % (distance, doa))
+                                # print("GT Distance: %.1f [cm], GT Angle: %.1f [deg]\n" % (sd, np.rad2deg(angle)))
+                                obst_distances.append(ind_obst_distance)
+                                dist_error.append(ind_obst_distance - distance)
+                                doas.append(ind_obst_angle)
+                                doa_error.append(ind_obst_angle - doa)
+                                cv2.arrowedLine(frame, mic_positions, closest_obstacle.astype(int), (255, 255, 0), 2)
+                                # Draw the line
+                                end_point = draw_line_with_angle(mic_positions, D41_normalized, distance, pixel_per_meters/100, doa)
+                                cv2.arrowedLine(frame, mic_positions, end_point, (0, 255, 255), 2)
                 
                     if len(trajectory) > 2:
                         # Draw trajectory
@@ -440,7 +422,7 @@ data = {
     'obstacle_angles': np.asarray(doas).tolist(),
     'angle_errors': np.asarray(doa_error).tolist()
 }
-with open(results_dir + file_name + '.yaml', "w") as f:
+with open('./non_blind_analysis/' + file_name + '.yaml', "w") as f:
     yaml.dump(data, f)
 cap.release()
 cv2.destroyAllWindows()
