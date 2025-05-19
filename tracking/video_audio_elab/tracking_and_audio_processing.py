@@ -148,7 +148,7 @@ def pow_two_pad_and_window(vec, show=False):
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-file_name = '20250516_16-43-26'
+file_name = '20250516_15-59-38'
 
 camera_path = './videos/' + file_name + '.mp4'
 robot_path = './audio/' + file_name + '.wav'
@@ -332,48 +332,50 @@ try:
                     index = np.where(ids == robot_id)[0] # Find the index of the robot marker
                     if len(index) == 0:
                         raise ValueError('Robot marker not found')
-                    mask = np.ones(len(ids), dtype=bool)
-                    ind12 = np.where(ids == 12)[0]
-                    if len(ind12) > 0:
-                        mask[ind12] = False
-                    ind13 = np.where(ids == 13)[0]
-                    if len(ind13) > 0:
-                        mask[ind13] = False
-                    ind14 = np.where(ids == 14)[0]
-                    if len(ind14) > 0:
-                        mask[ind14] = False
                     center = np.mean(corners_array[index], axis=1)[0]
                     trajectory = np.append(trajectory, np.array([[center[0], center[1]]]), axis=0)
-                    tl, tr, br, bl = np.squeeze(corners_array[index])
-                    mic_positions = np.astype(get_offset_point(center, tl, tr, offset=-pixel_per_meters*0.07), np.int32)
-                    mask[index] = False
+                    
+                    if distance != 0:
+                        mask = np.ones(len(ids), dtype=bool)
+                        mask[index] = False
+                        ind12 = np.where(ids == 12)[0]
+                        if len(ind12) > 0:
+                            mask[ind12] = False
+                        ind13 = np.where(ids == 13)[0]
+                        if len(ind13) > 0:
+                            mask[ind13] = False
+                        ind14 = np.where(ids == 14)[0]
+                        if len(ind14) > 0:
+                            mask[ind14] = False                    
+                        tl, tr, br, bl = np.squeeze(corners_array[index])
+                        mic_positions = np.astype(get_offset_point(center, tl, tr, offset=-pixel_per_meters*0.07), np.int32)                       
 
-                    obst_ids = ids[mask]
-                    obst_corners = corners_array[mask]
+                        obst_ids = ids[mask]
+                        obst_corners = corners_array[mask]
 
-                    obst_centers = np.mean(obst_corners, axis=1)
+                        obst_centers = np.mean(obst_corners, axis=1)
 
-                    obstacles, distances = shift_toward_point(obst_centers, mic_positions, 3.2, pixel_per_meters/100)
-                    if len(distances) > 0:
-                        D41 = tl - bl
-                        D14 = bl - tl
-                        D41_normalized = D41 / np.linalg.norm(D41)
-                        sorted_distances = np.sort(distances)
-                        found_nearest = False
-                        for sd in sorted_distances:
-                            V_marker_space = np.squeeze(obstacles[np.where(distances == sd)]) - mic_positions
-                            dot_product = np.dot(D41_normalized, V_marker_space)
-                            cross_product = cross2d(V_marker_space, D14)
-                            verse = -1 if cross_product > 0 else 1
-                            angle = verse*np.arccos(dot_product / (np.linalg.norm(V_marker_space)))
-                            # draw a line from the robot to the closest obstacle
-                            if np.abs(angle) <= np.pi/2:               
-                                closest_obstacle = np.squeeze(obstacles[np.where(distances == sd)])
-                                found_nearest = True
-                                break
-                        if (found_nearest and angle <= np.pi/2):
-                            # print distance and angle                                
-                            if distance != 0:
+                        obstacles, distances = shift_toward_point(obst_centers, mic_positions, 3.2, pixel_per_meters/100)
+                        if len(distances) > 0:
+                            D41 = tl - bl
+                            D14 = bl - tl
+                            D41_normalized = D41 / np.linalg.norm(D41)
+                            sorted_distances = np.sort(distances)
+                            found_nearest = False
+                            for sd in sorted_distances:
+                                V_marker_space = np.squeeze(obstacles[np.where(distances == sd)]) - mic_positions
+                                dot_product = np.dot(D41_normalized, V_marker_space)
+                                cross_product = cross2d(V_marker_space, D14)
+                                verse = -1 if cross_product > 0 else 1
+                                angle = verse*np.arccos(dot_product / (np.linalg.norm(V_marker_space)))
+                                # draw a line from the robot to the closest obstacle
+                                if np.abs(angle) <= np.pi/2:               
+                                    closest_obstacle = np.squeeze(obstacles[np.where(distances == sd)])
+                                    found_nearest = True
+                                    break
+                            if found_nearest:
+                                # print distance and angle                                
+                                
                                 # print('Time: %.1f [s]' % (frame_count/video_fps))
                                 # print("Distance: %.1f [cm], Angle: %.1f [deg]" % (distance, doa))
                                 # print("GT Distance: %.1f [cm], GT Angle: %.1f [deg]\n" % (sd, np.rad2deg(angle)))
@@ -406,7 +408,7 @@ try:
 except Exception as e:
     print(frame_count, e)
     traceback.print_exc()
-cv2.imwrite(file_name + '.jpg', resized_frame)
+# cv2.imwrite(file_name + '.jpg', resized_frame)
 data = {
     'obstacle_distances': np.asarray(obst_distances).tolist(),
     'distance_errors': np.asarray(dist_error).tolist(),
