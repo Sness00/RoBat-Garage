@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-file_name = '20250519_14-31-54'
+file_name = '20250520_10-35-07'
 # Saving directory
 dir_name = './plots/'
 if not os.path.exists(dir_name):

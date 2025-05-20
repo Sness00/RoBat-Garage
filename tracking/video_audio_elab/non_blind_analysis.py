@@ -148,7 +148,7 @@ def pow_two_pad_and_window(vec, show=False):
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-file_name = '20250519_14-31-54'
+file_name = '20250519_17-07-24'
 
 camera_path = './videos/' + file_name + '.mp4'
 robot_path = './audio/' + file_name + '.wav'
@@ -301,7 +301,10 @@ frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 video_fps = 25
-out = cv2.VideoWriter('./output/' + file_name + '.mp4', fourcc, video_fps, (frame_width, frame_height))
+output_dir = './output/'
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
+out = cv2.VideoWriter(output_dir + file_name + '.mp4', fourcc, video_fps, (frame_width, frame_height))
 try:
     frame_count = 0
     trajectory = np.zeros((0, 2), dtype=np.float32)

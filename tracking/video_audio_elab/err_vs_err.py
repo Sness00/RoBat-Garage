@@ -5,13 +5,13 @@ from matplotlib import pyplot as plt
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-file_name = '20250519_14-31-54'
+file_name = '20250516_15-59-38'
 # Saving directory
 dir_name = './plots/'
 if not os.path.exists(dir_name):
     os.makedirs(dir_name)
 
-with open('./analysis/' + file_name + '.yaml', "r") as file:
+with open('./non_blind_analysis/' + file_name + '.yaml', "r") as file:
     try:
         data = yaml.safe_load(file)  # Use safe_load to avoid potential security issues
     except yaml.YAMLError as error:

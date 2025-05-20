@@ -9,7 +9,7 @@ results_dir = './plots/'
 if not os.path.exists(results_dir):
     os.makedirs(results_dir)
 
-data_dir = './non_blind_analysis/'
+data_dir = './analysis/'
 
 data_files = os.listdir(data_dir)
 # Filter out non-YAML files
@@ -103,4 +103,26 @@ plt.grid()
 plt.tight_layout()
 # Save the figure
 plt.savefig(results_dir + 'all_runs.png', dpi=300, bbox_inches='tight')
+plt.show()
+
+colors = ['#0000FF', '#00FF00', '#FFFF00', '#FF8000', '#FF0000', '#800080']
+
+bins = np.array([-90, -60, -30, 0, 30, 60, 90])
+indices = np.digitize(obst_angles, bins, right=False) - 1
+indices = np.clip(indices, 0, len(colors) - 1)
+associated_colors = np.array(colors)[indices]
+
+# Create a scatter plot for angle errors vs distance errors
+plt.figure()
+plt.scatter(angle_errors, distance_errors, color=associated_colors, alpha=0.5)
+plt.title('Distance Errors vs Angle Errors')
+plt.xlabel('Angle Errors (degrees)')
+plt.ylabel('Distance Errors (cm)')
+plt.grid()
+# Legend for the colors
+for i, color in enumerate(colors):
+    plt.scatter([], [], color=color, label=fr'{bins[i]} [deg] $\leq$ $\theta_G$$_T$ < {bins[i+1]} [deg]')
+plt.xlim(-180, 180)
+plt.ylim(-90, 30)
+plt.legend()
 plt.show()
