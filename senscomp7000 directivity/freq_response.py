@@ -28,7 +28,7 @@ for signal in signals:
     yf = fftpack.fft(data)
     xf = np.fft.fftfreq(N, T)[:N//2]
     # append the frequency response
-    freq_response.append(20*np.log10(np.sqrt((2/N * np.abs(yf[0:N//2])**2))))
+    freq_response.append(20*np.log10(np.sqrt((1/N*np.abs(yf[0:N//2])**2))))
 
 # Convert to numpy array for easier manipulation
 freq_response = np.array(freq_response)
@@ -50,7 +50,7 @@ plt.plot(xf, mean_freq_response_dB, color='black', alpha=1)
 plt.title('Senscomp 7000 Frequency Response')
 plt.fill_between(xf, mean_freq_response_dB, color='black', alpha=0.1)
 plt.xlabel('Frequency (Hz)')
-plt.ylabel('SPL [dB] ref 1[kHz] @ 94 [dB SPL]')
+plt.ylabel('SPL [dB] @ 1 [m] ref 1[kHz] @ 94 [dB SPL]')
 plt.grid()
 plt.xlim(15000, 86000)
 plt.tight_layout()
