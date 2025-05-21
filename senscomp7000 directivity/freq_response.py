@@ -19,8 +19,6 @@ for signal in signals:
     # Load the signal
     signal_path = os.path.join(rec_dir, sweeps_dir, signal)
     data, fs = sf.read(signal_path)
-    print(20*np.log10(np.sqrt(np.mean(data**2))))
-    # print(fs)    
     # Perform FFT
     # Zero padding to the next power of 2
     N = len(data)
@@ -39,28 +37,18 @@ mean_freq_response_dB = np.mean(freq_response, axis=0)
 
 # Load calibration data
 calib_signal = sf.read(os.path.join(rec_dir, calib_dir, 'calibration_tone.wav'))[0]
-print(20*np.log10(np.sqrt(np.mean(calib_signal**2))))
-# N = len(calib_signal)
-# N = 2**np.ceil(np.log2(N)).astype(int)
-# print(N)
-# data = np.pad(calib_signal, (0, N - len(calib_signal)), 'constant')
-# T = 1.0 / fs
-# yf = fftpack.fft(data)
-# xfs = np.fft.fftfreq(N, T)[:N//2]
 
 dB_SPL = 94
 # Compute the rms for calibration signal
 dB_SPL_to_rms = dB_SPL - 20*np.log10(np.sqrt(np.mean(calib_signal**2))) 
 
-# append the frequency response
-# calib_freq_response = 20*np.log10(2.0/N * np.abs(yf[0:N//2])) + dB_SPL - dB_SPL_to_rms
-# Convert the mean frequency response to dB SPL
 mean_freq_response_dB = mean_freq_response_dB + dB_SPL_to_rms
 
 # plot the frequency response of the calibration signal
 plt.figure(figsize=(12, 8))
-plt.plot(xf, mean_freq_response_dB, color='black', alpha=0.5)
-plt.title('Sweep Signal Frequency Response')
+plt.plot(xf, mean_freq_response_dB, color='black', alpha=1)
+plt.title('Senscomp 7000 Frequency Response')
+plt.fill_between(xf, mean_freq_response_dB, color='black', alpha=0.1)
 plt.xlabel('Frequency (Hz)')
 plt.ylabel('SPL [dB] ref 1[kHz] @ 94 [dB SPL]')
 plt.grid()

@@ -3,16 +3,16 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 if __name__ == "__main__":
-    plt.rcParams['text.usetex'] = False
+    plt.rcParams['text.usetex'] = True
     os.chdir(os.path.abspath(os.path.dirname(__file__)))
     # Set the path to the directory containing the .npy files
     data_dir = './pseudospectra/'
     
     # Load the data from the .npy files
-    p_dB = np.load(data_dir  + 'das_20250429_18-09-04_30.npy')
+    p_dB = np.load(data_dir  + 'music_20250429_18-00-41_-60.npy')
     theta = np.linspace(-90, 90, p_dB.shape[0])    
     theta_bar = theta[np.argmax(p_dB)]
-    print(f"\nDOA: {theta_bar:.2f} degrees")
+    print(f"\nDOA: {theta_bar:.1f} degrees")
     
     # Create a scatter plot of the DOA data
     fig, ax2 = plt.subplots(subplot_kw={'projection': 'polar'})
