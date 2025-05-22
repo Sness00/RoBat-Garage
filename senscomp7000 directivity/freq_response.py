@@ -6,6 +6,9 @@ from scipy import fftpack
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
+# use latex for the font in the plot
+plt.rcParams['text.usetex'] = True
+
 rec_dir = './gras_20250416/'
 sweeps_dir = 'sweeps_1/'
 calib_dir = 'calib/'
@@ -45,12 +48,14 @@ dB_SPL_to_rms = dB_SPL - 20*np.log10(np.sqrt(np.mean(calib_signal**2)))
 mean_freq_response_dB = mean_freq_response_dB + dB_SPL_to_rms
 
 # plot the frequency response of the calibration signal
-plt.figure(figsize=(12, 8))
-plt.plot(xf, mean_freq_response_dB, color='black', alpha=1)
-plt.title('Senscomp 7000 Frequency Response')
+plt.figure()
+plt.plot(xf, mean_freq_response_dB, color='black')
+plt.title('Senscomp 7000 Frequency Response', fontsize=20)
 plt.fill_between(xf, mean_freq_response_dB, color='black', alpha=0.1)
-plt.xlabel('Frequency (Hz)')
-plt.ylabel('SPL [dB] @ 1 [m] ref 1[kHz] @ 94 [dB SPL]')
+plt.xlabel('Frequency (Hz)', fontsize=16)
+plt.ylabel('SPL [dB] @ 1 [m] ref 1[kHz] @ 94 [dB SPL]', fontsize=16)
+plt.yticks([0, 30, 60, 90], fontsize=16)
+plt.xticks([10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000], fontsize=16)
 plt.grid()
 plt.xlim(15000, 86000)
 plt.tight_layout()

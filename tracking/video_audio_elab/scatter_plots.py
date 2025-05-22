@@ -11,7 +11,7 @@ dir_name = './plots/'
 if not os.path.exists(dir_name):
     os.makedirs(dir_name)
 
-with open('./analysis/' + file_name + '.yaml', "r") as file:
+with open('./non_blind_analysis/' + file_name + '.yaml', "r") as file:
     try:
         data = yaml.safe_load(file)  # Use safe_load to avoid potential security issues
     except yaml.YAMLError as error:
@@ -53,13 +53,13 @@ plt.grid()
 
 plt.subplot(2, 2, 3)
 # Violin plot for distance errors, blue
-vp1 = plt.violinplot(distance_errors, np.ones((1)), showmeans=True, showextrema=False)
+vp1 = plt.violinplot(distance_errors, np.ones((1)), showmedians=True, showextrema=False)
 for body in vp1['bodies']:
     body.set_facecolor('blue')
     body.set_alpha(0.5)
 # Set means line color to black
-if 'cmeans' in vp1:
-    vp1['cmeans'].set_color('black')
+if 'cmedians' in vp1:
+    vp1['cmedians'].set_color('black')
 plt.text(0.2, 0.2, f'Mean: {dst_err_mean:.2f}cm\nStd: {dst_err_std:.2f}cm', 
          horizontalalignment='center', verticalalignment='center', transform=plt.gca().transAxes)
 # Hide the x-axis label
@@ -70,13 +70,13 @@ plt.grid()
 
 plt.subplot(2, 2, 4)
 # Violin plot for angle errors, red
-vp2 = plt.violinplot(angle_errors, np.ones((1)), showmeans=True, showextrema=False)
+vp2 = plt.violinplot(angle_errors, np.ones((1)), showmedians=True, showextrema=False)
 for body in vp2['bodies']:
     body.set_facecolor('red')
     body.set_alpha(0.5)
 # Set means line color to black
-if 'cmeans' in vp2:
-    vp2['cmeans'].set_color('black')
+if 'cmedians' in vp2:
+    vp2['cmedians'].set_color('black')
 plt.text(0.2, 0.2, f'Mean: {ang_err_mean:.2f}°\nStd: {ang_err_std:.2f}°', 
          horizontalalignment='center', verticalalignment='center', transform=plt.gca().transAxes)
 plt.title('Angle Error')
