@@ -127,15 +127,14 @@ ax.set_theta_direction(-1)
 ax.set_xticks(np.linspace(0, 2 * np.pi, 18, endpoint=False))
 for label in ax.get_xticklabels():
     label.set_fontsize(16)  # Set to desired font size
-ax.set_ylabel("dB", {'fontsize': 16})
-ax.set_ylabel("Radius", labelpad=20)
+
+ax.set_ylabel("dB", {'fontsize': 16}, labelpad=20)
 ax.yaxis.label.set_rotation(0)
 ax.yaxis.label.set_ha('right')
 # less radial ticks
 ax.set_yticks(np.linspace(-40, 0, 5))
 for label in ax.get_yticklabels():
     label.set_fontsize(16)  # Set to desired font size
-ax.set_ylabel("dB", {'fontsize': 16})
 ax.set_rlabel_position(-90)
 ax.set_title(
     "Senscomp Series 7000 Transducer Mean Radiance Pattern 15[kHz] - 95[kHz]",

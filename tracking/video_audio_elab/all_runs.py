@@ -5,10 +5,13 @@ from matplotlib import pyplot as plt
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
+plt.rcParams['text.usetex'] = True
+
 results_dir = './plots/'
 if not os.path.exists(results_dir):
     os.makedirs(results_dir)
 
+# data_dir = './non_blind_analysis/'
 data_dir = './analysis/'
 
 data_files = os.listdir(data_dir)
@@ -45,10 +48,12 @@ print(f"Number of data points: {len(obst_distances)}")
 obst_distances = np.array(obst_distances)
 distance_errors = np.array(distance_errors)
 dst_err_mean = np.mean(distance_errors)
+dst_err_median = np.median(distance_errors)
 dst_err_std = np.std(distance_errors)
 obst_angles = np.array(obst_angles)
 angle_errors = np.array(angle_errors)
 ang_err_mean = np.mean(angle_errors)
+ang_err_median = np.median(angle_errors)
 ang_err_std = np.std(angle_errors)
 
 # Create a scatter plot for distance errors
@@ -56,50 +61,52 @@ plt.figure(figsize=(12, 8))
 plt.subplot(2, 2, 1)
 plt.scatter(obst_distances, distance_errors, color='blue', alpha=0.5)
 plt.title('Distance Errors vs Obstacle Distances')
-plt.xlabel('Obstacle Distances (cm)')
-plt.ylabel('Distance Errors (cm)')
+plt.xlabel('Obstacle Distances [cm]')
+plt.ylabel('Distance Errors [cm]')
 plt.grid()
 
 plt.subplot(2, 2, 2)
 # Create a scatter plot for angle errors
 plt.scatter(obst_angles, angle_errors, color='red', alpha=0.5)
 plt.title('Angle Errors vs Obstacle Angles')
-plt.xlabel('Obstacle Angles (degrees)')
-plt.ylabel('Angle Errors (degrees)')
+plt.xlabel('Obstacle Angles [degrees]')
+plt.ylabel('Angle Errors [degrees]')
 plt.grid()
 
 plt.subplot(2, 2, 3)
 # Violin plot for distance errors, blue
-vp1 = plt.violinplot(distance_errors, np.ones((1)), showmeans=True, showextrema=False)
+vp1 = plt.violinplot(distance_errors, np.ones((1)), showmedians=True, showextrema=False)
 for body in vp1['bodies']:
     body.set_facecolor('blue')
     body.set_alpha(0.5)
 # Set means line color to black
-if 'cmeans' in vp1:
-    vp1['cmeans'].set_color('black')
-plt.text(0.2, 0.2, f'Mean: {dst_err_mean:.2f}cm\nStd: {dst_err_std:.2f}cm', 
+if 'cmedians' in vp1:
+    vp1['cmedians'].set_color('black')
+plt.text(0.2, 0.8, f'Mean: {dst_err_mean:.2f}cm\nMedian: {dst_err_median:.2f}cm\nStd: {dst_err_std:.2f}cm',
          horizontalalignment='center', verticalalignment='center', transform=plt.gca().transAxes)
 # Hide the x-axis label
 plt.xticks([])
 plt.title('Distance Error')
-plt.ylabel('Distance Errors (cm)')
+plt.ylabel('Distance Errors [cm]')
+# plt.legend()
 plt.grid()
 
 plt.subplot(2, 2, 4)
 # Violin plot for angle errors, red
-vp2 = plt.violinplot(angle_errors, np.ones((1)), showmeans=True, showextrema=False)
+vp2 = plt.violinplot(angle_errors, np.ones((1)), showmedians=True, showextrema=False)
 for body in vp2['bodies']:
     body.set_facecolor('red')
     body.set_alpha(0.5)
 # Set means line color to black
-if 'cmeans' in vp2:
-    vp2['cmeans'].set_color('black')
-plt.text(0.2, 0.2, f'Mean: {ang_err_mean:.2f}°\nStd: {ang_err_std:.2f}°', 
+if 'cmedians' in vp2:
+    vp2['cmedians'].set_color('black')
+plt.text(0.2, 0.8, f'Mean: {ang_err_mean:.2f}°\nMedian: {ang_err_median:.2f}°\nStd: {ang_err_std:.2f}°',
          horizontalalignment='center', verticalalignment='center', transform=plt.gca().transAxes)
 plt.title('Angle Error')
-plt.ylabel('Angle Errors (degrees)')
+plt.ylabel('Angle Errors [degrees]')
 plt.xticks([])
 plt.grid()
+# plt.legend()
 plt.tight_layout()
 # Save the figure
 plt.savefig(results_dir + 'all_runs.png', dpi=300, bbox_inches='tight')
@@ -116,13 +123,13 @@ associated_colors = np.array(colors)[indices]
 plt.figure()
 plt.scatter(angle_errors, distance_errors, color=associated_colors, alpha=0.5)
 plt.title('Distance Errors vs Angle Errors')
-plt.xlabel('Angle Errors (degrees)')
-plt.ylabel('Distance Errors (cm)')
+plt.xlabel('Angle Errors [degrees]')
+plt.ylabel('Distance Errors [cm]')
 plt.grid()
 # Legend for the colors
 for i, color in enumerate(colors):
-    plt.scatter([], [], color=color, label=fr'{bins[i]} [deg] $\leq$ $\theta_G$$_T$ < {bins[i+1]} [deg]')
+    plt.scatter([], [], color=color, label=fr'{bins[i]} [deg] $\leq \theta_G$$_T <$  {bins[i+1]} [deg]')
 plt.xlim(-180, 180)
-plt.ylim(-90, 30)
+# plt.ylim(-90, 30)
 plt.legend()
 plt.show()
