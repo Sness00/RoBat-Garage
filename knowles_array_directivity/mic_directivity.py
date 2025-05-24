@@ -20,9 +20,10 @@ import os
 
 if __name__ == '__main__':
     os.chdir(os.path.abspath(os.path.dirname(__file__)))
+    plt.rcParams['text.usetex'] = True
     PREPROCESS = False
-    SNR = True
-    IN_BANDS = False
+    SNR = False
+    IN_BANDS = True
     DIR = './recordings/'
     CUT_DIR = 'mic_'
     series = 1
@@ -117,7 +118,7 @@ if __name__ == '__main__':
             Channels_uni = Channels[:, 0:NFFT//2]
             freqs = fft.fftfreq(NFFT, 1 / fs)
             freqs = freqs[0:NFFT//2]
-            radiance = np.abs(Channels_uni)**2
+            radiance = (np.abs(Channels)**2/NFFT)[:, 0:NFFT//2]
             radiances.append(radiance)
 
         radiances = np.array(radiances)
@@ -129,29 +130,35 @@ if __name__ == '__main__':
         rad_patt_norm_dB = np.append(rad_patt_norm_dB, rad_patt_norm_dB[0])
 
     
-        ax.plot(np.deg2rad(theta), rad_patt_norm_dB, label='mic ' + str(k+1))
+        ax.plot(np.deg2rad(theta), rad_patt_norm_dB, label='mic ' + str(k+1), linestyle=('--' if k==5 else '-'))
     # offset polar axes by -90 degrees
     ax.set_theta_offset(np.pi / 2)
     # set theta direction to clockwise
     ax.set_theta_direction(-1)
     # more theta ticks
     ax.set_xticks(np.linspace(0, 2 * np.pi, 18, endpoint=False))
-    ax.set_ylabel("dB")
+    ax.set_ylabel("dB", labelpad=20, fontsize=16, y=0.7)
     # less radial ticks
-    ax.set_yticks(np.arange(-60, 0, 2), labels=[str(i) for i in np.arange(-60, 0, 2)], fontsize=5)
-    ax.set_rlabel_position(-90)
-    ax.set_title('Microphones Directivity Patterns')
-    ax.legend(loc="upper right", bbox_to_anchor=(1.1, 1.1))
+    # ax.set_yticks(np.arange(-60, 0, 2), labels=[str(i) for i in np.arange(-60, 0, 2)], fontsize=5)
+    ax.set_rlabel_position(-70)
+    ax.set_ylim(-70, 1)
+    ax.yaxis.label.set_rotation(0)
+    ax.set_title('Microphones Directivity Patterns', fontsize=20)
+    ax.legend(loc="upper right", bbox_to_anchor=(1.2, 1.1), fontsize=16)
+    for label in ax.get_yticklabels():
+        label.set_fontsize(16)
+    for label in ax.get_xticklabels():
+        label.set_fontsize(16)
     plt.tight_layout()
     plt.show()
 
     if IN_BANDS:
-        central_freq = np.array([20e3, 30e3, 40e3, 50e3, 60e3, 70e3, 80e3, 90e3])
+        central_freq = np.array([20e3, 30e3, 40e3, 50e3, 60e3, 70e3, 80e3])
         BW = 2e3
 
         linestyles = ["-", "--", "-.", ":"]
 
-        for k in np.arange(8):
+        for k in np.arange(len(central_freq)):
             fig, (ax1, ax2) = plt.subplots(1, 2, subplot_kw={"projection": "polar"})
             plt.suptitle("Microphone " + str(k+1) + " Directivity Pattern")
             i = 3
@@ -209,4 +216,4 @@ if __name__ == '__main__':
             ax2.set_rlabel_position(-90)
 
             plt.tight_layout()
-            plt.show()
+    plt.show()
