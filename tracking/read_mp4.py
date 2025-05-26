@@ -10,8 +10,8 @@ from scipy import signal
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 # Define path to video
-camera_path = './videos/GX010522.mp4'
-robot_path = './audio/20250514_17-21-20.wav'
+camera_path = './video_audio_elab/videos/20250516_15-25-28.mp4'
+robot_path = './video_audio_elab/audio/20250516_15-25-28.wav'
 video_fps = 60
 try:
     robot_audio, fs = sf.read(robot_path)
