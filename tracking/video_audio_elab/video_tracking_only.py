@@ -8,19 +8,17 @@ import sys
 import yaml
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
-save_dir = './trajectories/'
+save_dir = './trajectories_control/'
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
 aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_6X6_250)
 parameters = aruco.DetectorParameters()
 
-
-
 screen_width, screen_height = pag.size()
 robot_id = 0
 arena_w = 1.55  # [m]
 arena_l = 2  # [m]
-camera_path = './videos/'
+camera_path = './control/'
 file_names = os.listdir(camera_path)
 file_names = [f for f in file_names if f.endswith('.MP4')]
 pixel_per_meters_list = []
@@ -109,12 +107,12 @@ for file_name in file_names:
     #     traceback.print_exc()
     # # Save trajectory to YAML file
     # output_yaml = save_dir + file_name[:-4] + '_trajectory.yaml'
-    # with open(output_yaml, 'w') as f:
+    # with open(output_yaml, 'a') as f:
     #     yaml.dump({'trajectory': trajectory.tolist()}, f)
     # print(f"Trajectory saved to {output_yaml}")
     # cap.release()
 cv2.destroyAllWindows()
 output_yaml = save_dir + 'conversion_factors.yaml'
-with open(output_yaml, 'w') as f:
+with open(output_yaml, 'a') as f:
     yaml.dump({'pixel_to_meters': np.array(pixel_per_meters_list).tolist()}, f)
 print(f"Conversion factors saved to {output_yaml}")

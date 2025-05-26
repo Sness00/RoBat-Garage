@@ -64,16 +64,18 @@ with open(data_dir + 'conversion_factors.yaml', 'r') as file:
     except yaml.YAMLError as error:
         print(f"Error loading YAML file: {error}")
 pixel_per_meter = np.array(data['pixel_to_meters'])
-for k, f in enumerate(file_names):
+for k, f in enumerate(file_names[:-1]):
+    print(f)
     with open(data_dir + f, 'r') as file:
         try:
             data = yaml.safe_load(file)  # Use safe_load to avoid potential security issues
         except yaml.YAMLError as error:
             print(f"Error loading YAML file: {error}")
-    traj = np.array(data['trajectory'])
+    print(data.keys())
+    traj = np.array(data['trajectory'])  # Assuming the trajectory is the first key in the dictionary
     traj[:, 0] -= min(traj[:, 0])  # Normalize x-coordinates
     traj[:, 1] -= min(traj[:, 1])  # Normalize y-coordinates
-    traj /= pixel_per_meter[j + group_indexes[i]]  # Convert to meters
+    traj /= pixel_per_meter[k]  # Convert to meters
     trajectory = traj
 
     xedges = int((max(trajectory[:, 0]) - min(trajectory[:, 0]))/bottle_radius)
@@ -86,7 +88,7 @@ for k, f in enumerate(file_names):
     # flip the histogram to match the orientation of the trajectory
     H = H.T
     H = np.flipud(H)
-    ax = fig.add_subplot(2, 3, k + i +1, aspect='equal')
+    ax = fig.add_subplot(2, 3, k + i + 2, aspect='equal')
     X, Y = np.meshgrid(xedges, yedges)
     ax.pcolormesh(X, Y, H)
     ax.set_title(f'No obstacles {k+1}')
