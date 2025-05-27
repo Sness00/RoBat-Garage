@@ -49,10 +49,10 @@ for signal in signals:
     data = np.pad(data, (0, N - len(data)), 'constant')
     T = 1.0 / fs
     yf = fft.rfft(data) * 2 / N
-    xf = np.fft.fftfreq(N, T)[:N//2]
+    xf = fft.rfftfreq(N, T)
     # append the frequency response
     # yf[1:] = yf[1:] * 2  # Double the amplitude for positive frequencies
-    freq_response.append(np.abs(yf[:N//2])/np.sqrt(2))
+    freq_response.append(np.abs(yf)/np.sqrt(2))
 
 # Convert to numpy array for easier manipulation
 freq_response = np.array(freq_response)
@@ -70,9 +70,9 @@ mean_freq_response_dB = mean_freq_response_dB + dB_SPL_to_rms
 # plot the frequency response of the calibration signal
 plt.figure()
 plt.plot(xf, mean_freq_response_dB, color='black')
-plt.title('Senscomp 7000 Frequency Response', fontsize=20)
+plt.title('Senscomp Series 7000 Frequency Response', fontsize=20)
 plt.fill_between(xf, mean_freq_response_dB, color='black', alpha=0.1)
-plt.xlabel('Frequency (Hz)', fontsize=16)
+plt.xlabel('Frequency [Hz]', fontsize=16)
 plt.ylabel('SPL [dB] @ 1 [m] ref 20[$\\mu$Pa]', fontsize=16)
 # plt.yticks([0, 30, 60, 90], fontsize=16)
 plt.xticks([10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000], fontsize=16)

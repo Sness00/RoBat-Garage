@@ -143,77 +143,47 @@ if __name__ == '__main__':
     ax.set_rlabel_position(-70)
     ax.set_ylim(-70, 1)
     ax.yaxis.label.set_rotation(0)
-    ax.set_title('Microphones Directivity Patterns', fontsize=20)
+    ax.set_title('Knowles SPH0641LU4H-1 directivity', fontsize=20)
     ax.legend(loc="upper right", bbox_to_anchor=(1.2, 1.1), fontsize=16)
     for label in ax.get_yticklabels():
         label.set_fontsize(16)
     for label in ax.get_xticklabels():
         label.set_fontsize(16)
     plt.tight_layout()
-    plt.show()
+    # plt.show()
 
     if IN_BANDS:
-        central_freq = np.array([20e3, 30e3, 40e3, 50e3, 60e3, 70e3, 80e3])
+        central_freq = np.array([20e3, 30e3, 40e3, 50e3, 60e3, 70e3, 80e3, 90e3])
         BW = 2e3
-
-        linestyles = ["-", "--", "-.", ":"]
+        fig, ax1 = plt.subplots(4, 2, subplot_kw={"projection": "polar"})
+        plt.subplots_adjust(hspace=0.5, wspace=0.5)
+        plt.suptitle("Knowles SPH0641LU4H-1 directivity", fontsize=20)
 
         for k in np.arange(len(central_freq)):
-            fig, (ax1, ax2) = plt.subplots(1, 2, subplot_kw={"projection": "polar"})
-            plt.suptitle("Microphone " + str(k+1) + " Directivity Pattern")
-            i = 3
-            for fc in central_freq[0:4]:
+            for j in np.arange(8):
                 rad_patt = np.mean(
-                    mean_radiances[k, :, (freqs < fc + BW) & (freqs > fc - BW)], axis=0
+                    mean_radiances[j, :, (freqs < central_freq[k] + BW) & (freqs > central_freq[k] - BW)], axis=0
                 )
                 rad_patt_norm = rad_patt / np.max(rad_patt)
                 rad_patt_norm_dB = 20 * np.log10(rad_patt_norm)
                 rad_patt_norm_dB = np.append(rad_patt_norm_dB, rad_patt_norm_dB[0])
-                ax1.plot(
+                ax1[k%4, k//4].plot(
                     np.deg2rad(theta),
                     rad_patt_norm_dB,
-                    label=str(fc)[0:2] + " [kHz]",
-                    linestyle=linestyles[i]
-                    )
-                i -= 1
-            ax1.legend(loc="upper right", bbox_to_anchor=(1.1, 1.1))
-            # offset polar axes by -90 degrees
-            ax1.set_theta_offset(np.pi / 2)
-            # set theta direction to clockwise
-            ax1.set_theta_direction(-1)
-            # more theta ticks
-            ax1.set_xticks(np.linspace(0, 2 * np.pi, 18, endpoint=False))
-            # less radial ticks
-            ax1.set_yticks(np.linspace(-40, 0, 5))
-            ax1.set_rlabel_position(100)
-            ax1.set_rlabel_position(-90)
-
-            i = 3
-            for fc in central_freq[4:8]:
-                rad_patt = np.mean(
-                    mean_radiances[k, :, (freqs < fc + BW) & (freqs > fc - BW)], axis=0
+                    label='Mic ' + str(j+1),
+                    linestyle=('--' if j==5 else '-')
                 )
-                rad_patt_norm = rad_patt / np.max(rad_patt)
-                rad_patt_norm_dB = 20 * np.log10(rad_patt_norm)
-                rad_patt_norm_dB = np.append(rad_patt_norm_dB, rad_patt_norm_dB[0])
-                ax2.plot(
-                    np.deg2rad(theta),
-                    rad_patt_norm_dB,
-                    label=str(fc)[0:2] + " [kHz]",
-                    linestyle=linestyles[i]
-                )
-                i -= 1
-            ax2.legend(loc="upper right", bbox_to_anchor=(1.1, 1.1))
-            # offset polar axes by -90 degrees
-            ax2.set_theta_offset(np.pi / 2)
-            # set theta direction to clockwise
-            ax2.set_theta_direction(-1)
-            # more theta ticks
-            ax2.set_xticks(np.linspace(0, 2 * np.pi, 18, endpoint=False))
-            # less radial ticks
-            ax2.set_yticks(np.arange(-60, 0, 20))
-            ax2.set_rlabel_position(100)
-            ax2.set_rlabel_position(-90)
+                ax1[k%4, k//4].set_title(str(central_freq[k])[0:2] + " [kHz]")
+                ax1[k%4, k//4].legend(loc="upper right", bbox_to_anchor=(1.3, 1.2))
+                # offset polar axes by -90 degrees
+                ax1[k%4, k//4].set_theta_offset(np.pi / 2)
+                # set theta direction to clockwise
+                ax1[k%4, k//4].set_theta_direction(-1)
+                # more theta ticks
+                ax1[k%4, k//4].set_xticks(np.linspace(0, 2 * np.pi, 18, endpoint=False))
+                # less radial ticks
+                ax1[k%4, k//4].set_yticks(np.linspace(-60, 0, 5))
+                ax1[k%4, k//4].set_rlabel_position(-90)
 
-            plt.tight_layout()
+    plt.tight_layout()
     plt.show()
