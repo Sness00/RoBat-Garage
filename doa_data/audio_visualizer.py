@@ -22,6 +22,8 @@ plt.rcParams['text.usetex'] = True
 
 x, fs = sf.read('./audio/capon_20250429_18-06-59.wav')
 
+print(fs)
+
 dur = 3e-3
 hi_freq = 60e3
 low_freq = 20e3
