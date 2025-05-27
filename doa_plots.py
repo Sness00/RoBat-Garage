@@ -7,14 +7,15 @@ if __name__ == "__main__":
     plt.rcParams['text.usetex'] = True
     os.chdir(os.path.abspath(os.path.dirname(__file__)))
     # Set the path to the directory containing the .npy files
-    multisource = False
+    multisource = True
     general_dir = 'doa_data'
     if multisource:
         general_dir += '_multisource'
     data_dir = 'pseudospectra/'
     normalize = True
     # Load the data from yaml file
-    file_name = os.path.join(general_dir, data_dir  + 'music_20250429_18-06-03.yaml')
+    files = os.listdir(os.path.join(general_dir, data_dir))
+    file_name = os.path.join(general_dir, data_dir  + files[16])
     with open(file_name, 'r') as f:
         try:
             data = yaml.safe_load(f)  # Use safe_load to avoid potential security issues
@@ -22,6 +23,11 @@ if __name__ == "__main__":
             print(error)
     p_dB = np.array(data['p_dB'])
     theta = np.array(data['theta'])
+    if multisource:
+        gt_angles = np.array(data['obst_position'])
+    else:
+        gt_angles = data['obst_position']
+    print(f"Ground Truth Angles: {gt_angles}")
     # p_dB = np.load(os.path.join(general_dir, data_dir  + 'music_20250429_18-06-03_0.npy'))
     if normalize:
         p_dB -= max(p_dB)
@@ -33,6 +39,11 @@ if __name__ == "__main__":
     fig, ax2 = plt.subplots(subplot_kw={'projection': 'polar'})
     ax2.set_title('p($\\theta$)', fontsize=20)
     ax2.plot(np.deg2rad(theta), p_dB, color='black', linewidth=1.5)
+    if multisource:
+        for angle in gt_angles:
+            ax2.axvline(np.deg2rad(angle), color='red', linestyle='dashed', label='Ground Truth')
+    else:
+        ax2.axvline(obst_position := np.deg2rad(gt_angles), color='red', linestyle='dashed', label='Ground Truth')
     for label in ax2.get_yticklabels():
         label.set_fontsize(16)
     # ax2.axvline(np.deg2rad(theta_bar), color='g', linestyle='dashed')
