@@ -20,7 +20,7 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 plt.rcParams['text.usetex'] = True
 
-x, fs = sf.read('./audio/capon_20250429_18-06-59.wav')
+x, fs = sf.read('./doa_data/audio/capon_20250429_18-06-59.wav')
 
 print(fs)
 

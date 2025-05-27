@@ -1,4 +1,5 @@
 import os
+import yaml
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -6,10 +7,22 @@ if __name__ == "__main__":
     plt.rcParams['text.usetex'] = True
     os.chdir(os.path.abspath(os.path.dirname(__file__)))
     # Set the path to the directory containing the .npy files
-    data_dir = './pseudospectra/'
+    multisource = False
+    general_dir = 'doa_data'
+    if multisource:
+        general_dir += '_multisource'
+    data_dir = 'pseudospectra/'
     normalize = True
-    # Load the data from the .npy files
-    p_dB = np.load(data_dir  + 'music_20250429_18-06-03_0.npy')
+    # Load the data from yaml file
+    file_name = os.path.join(general_dir, data_dir  + 'music_20250429_18-06-03.yaml')
+    with open(file_name, 'r') as f:
+        try:
+            data = yaml.safe_load(f)  # Use safe_load to avoid potential security issues
+        except yaml.YAMLError as error:
+            print(error)
+    print(data)
+    p_dB = np.array(data['p_dB'])
+    # p_dB = np.load(os.path.join(general_dir, data_dir  + 'music_20250429_18-06-03_0.npy'))
     if normalize:
         p_dB -= max(p_dB)
     theta = np.linspace(-90, 90, p_dB.shape[0])    
