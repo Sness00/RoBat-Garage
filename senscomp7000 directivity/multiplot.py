@@ -14,7 +14,7 @@ plt.rcParams['text.usetex'] = True
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
-in_bands = False
+in_bands = True
 # Load audio files, then plot them in a 6x6 grid
 DIR = "./sanken_20250416/sweeps_1/"  # Directory containing the audio files
 audio_files = os.listdir(DIR)  # List all files in the sweeps directory
@@ -51,7 +51,7 @@ if in_bands:
     linestyles = ["-", "--", "-.", ":"]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, subplot_kw={"projection": "polar"})
-    plt.suptitle("Radiance Pattern - Senscomp Series 7000 Transducer")
+    plt.suptitle("Radiance Pattern - Senscomp Series 7000 Transducer", fontsize=20)
     i = 3
     for fc in central_freq[0:4]:
         rad_patt = np.mean(
@@ -64,22 +64,34 @@ if in_bands:
             np.deg2rad(theta),
             rad_patt_norm_dB,
             label=str(fc)[0:2] + " [kHz]",
-            linestyle=linestyles[i]
+            linestyle=linestyles[i],
+            linewidth=2
         )
         i -= 1
-    ax1.legend(loc="upper right", bbox_to_anchor=(1.1, 1.1))
+    ax1.legend(loc="upper right", bbox_to_anchor=(1.3, 1.2), fontsize=16)
     # offset polar axes by -90 degrees
     ax1.set_theta_offset(np.pi / 2)
     # set theta direction to clockwise
     ax1.set_theta_direction(-1)
     # more theta ticks
     ax1.set_xticks(np.linspace(0, 2 * np.pi, 18, endpoint=False))
-    # less radial ticks
     ax1.set_yticks(np.linspace(-40, 0, 5))
+    for label in ax1.get_yticklabels():
+        label.set_fontsize(16)
+    for label in ax1.get_xticklabels():
+        label.set_fontsize(16)
+    ax1.set_ylabel("dB", {'fontsize': 16}, labelpad=20)
+    ax1.yaxis.label.set_rotation(0)
+    # less radial ticks
     ax1.set_rlabel_position(100)
     ax1.set_rlabel_position(-90)
 
     i = 3
+    ax2.plot([])
+    ax2.plot([])
+    ax2.plot([])
+    ax2.plot([])
+
     for fc in central_freq[4:8]:
         rad_patt = np.mean(
             mean_radiance[:, (freqs < fc + BW) & (freqs > fc - BW)], axis=1
@@ -87,22 +99,30 @@ if in_bands:
         rad_patt_norm = rad_patt / np.max(rad_patt)
         rad_patt_norm_dB = 20 * np.log10(rad_patt_norm)
         rad_patt_norm_dB = np.append(rad_patt_norm_dB, rad_patt_norm_dB[0])
+        
         ax2.plot(
             np.deg2rad(theta),
             rad_patt_norm_dB,
             label=str(fc)[0:2] + " [kHz]",
-            linestyle=linestyles[i]
+            linestyle=linestyles[i],
+            linewidth=2
         )
         i -= 1
-    ax2.legend(loc="upper right", bbox_to_anchor=(1.1, 1.1))
+    ax2.legend(loc="upper right", bbox_to_anchor=(1.3, 1.2), fontsize=16)
     # offset polar axes by -90 degrees
     ax2.set_theta_offset(np.pi / 2)
     # set theta direction to clockwise
     ax2.set_theta_direction(-1)
     # more theta ticks
     ax2.set_xticks(np.linspace(0, 2 * np.pi, 18, endpoint=False))
-    # less radial ticks
     ax2.set_yticks(np.linspace(-40, 0, 5))
+    for label in ax2.get_xticklabels():
+        label.set_fontsize(16)  # Set to desired font size
+    for label in ax2.get_yticklabels():
+        label.set_fontsize(16)
+    # less radial ticks
+    ax2.set_ylabel("dB", {'fontsize': 16}, labelpad=20)
+    ax2.yaxis.label.set_rotation(0)
     ax2.set_rlabel_position(100)
     ax2.set_rlabel_position(-90)
 
@@ -141,5 +161,5 @@ ax.set_title(
     {'fontsize': 20}
 )
 plt.tight_layout()
-plt.show()
+# plt.show()
 
