@@ -20,12 +20,12 @@ if __name__ == "__main__":
             data = yaml.safe_load(f)  # Use safe_load to avoid potential security issues
         except yaml.YAMLError as error:
             print(error)
-    print(data)
     p_dB = np.array(data['p_dB'])
+    theta = np.array(data['theta'])
     # p_dB = np.load(os.path.join(general_dir, data_dir  + 'music_20250429_18-06-03_0.npy'))
     if normalize:
         p_dB -= max(p_dB)
-    theta = np.linspace(-90, 90, p_dB.shape[0])    
+    # theta = np.linspace(-90, 90, p_dB.shape[0])    
     theta_bar = theta[np.argmax(p_dB)]
     print(f"\nDOA: {theta_bar:.1f} degrees")
     
