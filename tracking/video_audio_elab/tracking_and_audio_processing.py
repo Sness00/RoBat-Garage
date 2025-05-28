@@ -148,7 +148,7 @@ def pow_two_pad_and_window(vec, show=False):
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-file_name = '20250520_11-09-15'
+file_name = '20250516_15-25-28'
 
 camera_path = './videos/' + file_name + '.mp4'
 robot_path = './audio/' + file_name + '.wav'
@@ -315,7 +315,7 @@ try:
     dist_error = []
     doas = []
     doa_error = []
-
+    all_obstacles = False
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
@@ -362,7 +362,10 @@ try:
                         obst_corners = corners_array[mask]
 
                         obst_centers = np.mean(obst_corners, axis=1)
-
+                        if (len(obst_centers) == 11 and not all_obstacles):
+                            all_obstacles = True
+                            obst_list = np.array(obst_centers).tolist()
+                            print('Position of all obstacles retrieved')
                         obstacles, distances = shift_toward_point(obst_centers, mic_positions, 3.2, pixel_per_meters/100)
                         if len(distances) > 0:
                             D41 = tl - bl
@@ -422,7 +425,8 @@ data = {
     'obstacle_distances': np.asarray(obst_distances).tolist(),
     'distance_errors': np.asarray(dist_error).tolist(),
     'obstacle_angles': np.asarray(doas).tolist(),
-    'angle_errors': np.asarray(doa_error).tolist()
+    'angle_errors': np.asarray(doa_error).tolist(),
+    'obstacles_positions': obst_list
 }
 with open('./analysis/' + file_name + '.yaml', "w") as f:
     yaml.dump(data, f)
