@@ -297,6 +297,14 @@ except:
 cap.release()
 
 cap = cv2.VideoCapture(video_path)
+frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+video_fps = 25
+output_dir = './blind_output/'
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
+out = cv2.VideoWriter(output_dir + file_name + '.mp4', fourcc, video_fps, (frame_width, frame_height))
 try:
     frame_count = 0
     trajectory = np.zeros((0, 2), dtype=np.float32)
@@ -393,9 +401,10 @@ try:
                         for i in range(len(trajectory) - 1):
                             cv2.line(frame, tuple(trajectory[i].astype(int)), tuple(trajectory[i + 1].astype(int)), (0, 255, 0), 2)
                     # Add a legend for the two lines departing from the robot
-                    cv2.putText(frame, 'Ground truth', (int(100), int(100)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
-                    cv2.putText(frame, 'Estimated distance and direction', (int(100), int(200)), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
-
+                    cv2.rectangle(frame, (50, 50), (620, 250), (0, 0, 0), -1)
+                    cv2.putText(frame, 'Ground truth', (int(80), int(100)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
+                    cv2.putText(frame, 'Estimated distance and direction', (int(80), int(200)), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+                    out.write(frame)
                     # Display result
                     resized_frame = cv2.resize(frame, (screen_width, screen_height))
                     cv2.imshow('ArUco Tracker', resized_frame)
@@ -418,4 +427,5 @@ data = {
 with open('./analysis/' + file_name + '.yaml', "w") as f:
     yaml.dump(data, f)
 cap.release()
+out.release()
 cv2.destroyAllWindows()
