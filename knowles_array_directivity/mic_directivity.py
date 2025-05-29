@@ -18,6 +18,9 @@ import os
 #                     file_name_symm = str(360 - int(file_name[0:3])) + 'deg' + '.wav'
 #                     sf.write(rec_dir + '/' + cut_dir + '/' + file_name_symm, x_symm, int(fs))
 
+def moving_average(data, window_size):
+    return np.convolve(data, np.ones(window_size)/window_size, mode='same')
+
 if __name__ == '__main__':
     os.chdir(os.path.abspath(os.path.dirname(__file__)))
     plt.rcParams['text.usetex'] = True
@@ -114,11 +117,13 @@ if __name__ == '__main__':
                 channels.append(audio)
             channels = np.array(channels)
 
-            Channels = fft.fft(channels, n=NFFT, axis=1)
-            Channels_uni = Channels[:, 0:NFFT//2]
+            Channels = fft.fft(channels, n=NFFT, axis=1)/NFFT
             freqs = fft.fftfreq(NFFT, 1 / fs)
             freqs = freqs[0:NFFT//2]
-            radiance = (np.abs(Channels)**2/NFFT)[:, 0:NFFT//2]
+            Channels = np.abs(Channels[:, 0:NFFT//2])
+            for j in range(len(Channels)):
+                Channels[j, :] = moving_average(Channels[j, :], 32)
+            radiance = (Channels**2)
             radiances.append(radiance)
 
         radiances = np.array(radiances)
@@ -137,14 +142,14 @@ if __name__ == '__main__':
     ax.set_theta_direction(-1)
     # more theta ticks
     ax.set_xticks(np.linspace(0, 2 * np.pi, 18, endpoint=False))
-    ax.set_ylabel("dB", labelpad=20, fontsize=16, y=0.7)
+    ax.set_ylabel("dB", labelpad=20, fontsize=16, y=0.5)
     # less radial ticks
     # ax.set_yticks(np.arange(-60, 0, 2), labels=[str(i) for i in np.arange(-60, 0, 2)], fontsize=5)
-    ax.set_rlabel_position(-70)
+    ax.set_rlabel_position(-90)
     ax.set_ylim(-70, 1)
     ax.yaxis.label.set_rotation(0)
     ax.set_title('Knowles SPH0641LU4H-1 directivity', fontsize=20)
-    ax.legend(loc="upper right", bbox_to_anchor=(1.2, 1.1), fontsize=16)
+    ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1), fontsize=16)
     for label in ax.get_yticklabels():
         label.set_fontsize(16)
     for label in ax.get_xticklabels():
@@ -153,37 +158,60 @@ if __name__ == '__main__':
     # plt.show()
 
     if IN_BANDS:
+        
         central_freq = np.array([20e3, 30e3, 40e3, 50e3, 60e3, 70e3, 80e3, 90e3])
         BW = 2e3
-        fig, ax1 = plt.subplots(4, 2, subplot_kw={"projection": "polar"})
-        plt.subplots_adjust(hspace=0.5, wspace=0.5)
-        plt.suptitle("Knowles SPH0641LU4H-1 directivity", fontsize=20)
+        fig, ax1 = plt.subplots(4, 2, subplot_kw={"projection": "polar"}, figsize=(12, 16))
+
+        plt.suptitle("Knowles SPH0641LU4H-1 Directivity", fontsize=20, y=1.02)
+
+        # Store a line for each mic once (to use for global legend)
+        legend_lines = []
+        legend_labels = []
 
         for k in np.arange(len(central_freq)):
+            ax = ax1[k % 4, k // 4]
             for j in np.arange(8):
                 rad_patt = np.mean(
-                    mean_radiances[j, :, (freqs < central_freq[k] + BW) & (freqs > central_freq[k] - BW)], axis=0
+                    mean_radiances[j, :, (freqs < central_freq[k] + BW) & (freqs > central_freq[k] - BW)],
+                    axis=0
                 )
                 rad_patt_norm = rad_patt / np.max(rad_patt)
                 rad_patt_norm_dB = 20 * np.log10(rad_patt_norm)
                 rad_patt_norm_dB = np.append(rad_patt_norm_dB, rad_patt_norm_dB[0])
-                ax1[k%4, k//4].plot(
+
+                line, = ax.plot(
                     np.deg2rad(theta),
                     rad_patt_norm_dB,
-                    label='Mic ' + str(j+1),
-                    linestyle=('--' if j==5 else '-')
+                    label='Mic ' + str(j + 1),
+                    linestyle=('--' if j == 5 else '-')
                 )
-                ax1[k%4, k//4].set_title(str(central_freq[k])[0:2] + " [kHz]")
-                ax1[k%4, k//4].legend(loc="upper right", bbox_to_anchor=(1.3, 1.2))
-                # offset polar axes by -90 degrees
-                ax1[k%4, k//4].set_theta_offset(np.pi / 2)
-                # set theta direction to clockwise
-                ax1[k%4, k//4].set_theta_direction(-1)
-                # more theta ticks
-                ax1[k%4, k//4].set_xticks(np.linspace(0, 2 * np.pi, 18, endpoint=False))
-                # less radial ticks
-                ax1[k%4, k//4].set_yticks(np.linspace(-60, 0, 5))
-                ax1[k%4, k//4].set_rlabel_position(-90)
 
+                # Collect legend items only once (e.g., from the first plot)
+                if k == 0:
+                    legend_lines.append(line)
+                    legend_labels.append('Mic ' + str(j + 1))
+
+            ax.set_title(f"{int(central_freq[k]/1000)} kHz", fontsize=12, pad=10)
+            ax.set_theta_offset(np.pi / 2)
+            ax.set_theta_direction(-1)
+            ax.set_xticks(np.linspace(0, 2 * np.pi, 18, endpoint=False))
+            ax.set_yticks(np.linspace(-60, 0, 5))
+            ax.set_rlabel_position(-90)
+
+        # Adjust layout
+        plt.tight_layout(pad=4.0)
+        fig.subplots_adjust(top=0.9, hspace=0.4, wspace=0.6, bottom=0.1)
+
+        # Add a global legend below all subplots
+        fig.legend(
+            handles=legend_lines,
+            labels=legend_labels,
+            loc='lower center',
+            ncol=4,
+            fontsize=10,
+            frameon=False,
+            bbox_to_anchor=(0.5, 0.02)
+        )
     plt.tight_layout()
     plt.show()

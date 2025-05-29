@@ -3,7 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import soundfile as sf
 from scipy import fft
-from scipy.signal import butter, sosfilt
+from scipy.signal import butter, sosfilt, windows
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -25,6 +25,9 @@ def bandpass_rms(signal, fs, lowcut=950, highcut=1050, order=4):
     filtered = sosfilt(sos, signal)
     rms = np.sqrt(np.mean(filtered**2))
     return rms
+
+def moving_average(data, window_size):
+    return np.convolve(data, np.ones(window_size)/window_size, mode='same')
 
 # use latex for the font in the plot
 plt.rcParams['text.usetex'] = True
@@ -52,7 +55,7 @@ for signal in signals:
     xf = fft.rfftfreq(N, T)
     # append the frequency response
     # yf[1:] = yf[1:] * 2  # Double the amplitude for positive frequencies
-    freq_response.append(np.abs(yf)/np.sqrt(2))
+    freq_response.append(moving_average(np.abs(yf), 32)/np.sqrt(2))
 
 # Convert to numpy array for easier manipulation
 freq_response = np.array(freq_response)
@@ -74,7 +77,7 @@ plt.title('Senscomp Series 7000 Frequency Response', fontsize=20)
 plt.fill_between(xf, mean_freq_response_dB, color='black', alpha=0.1)
 plt.xlabel('Frequency [Hz]', fontsize=16)
 plt.ylabel('SPL [dB] @ 1 [m] ref 20[$\\mu$Pa]', fontsize=16)
-# plt.yticks([0, 30, 60, 90], fontsize=16)
+plt.yticks([0, 20, 40, 60, 80], fontsize=16)
 plt.xticks([10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000], fontsize=16)
 plt.yticks(fontsize=16)
 plt.grid()

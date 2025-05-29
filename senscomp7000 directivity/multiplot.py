@@ -9,6 +9,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import fft
 
+def moving_average(data, window_size):
+    return np.convolve(data, np.ones(window_size)/window_size, mode='same')
+
 plt.rcParams['text.usetex'] = True
 
 abspath = os.path.abspath(__file__)
@@ -35,6 +38,8 @@ for i in np.arange(5):
     freqs = freqs[0:NFFT//2]
     R = 1
     radiance = 4 * np.pi * R * np.abs(Channels_uni)
+    for j in range(len(radiance)):
+        radiance[j, :] = moving_average(radiance[j, :], 32)
     radiances.append(radiance)
 
 radiances = np.array(radiances)
@@ -161,5 +166,5 @@ ax.set_title(
     {'fontsize': 20}
 )
 plt.tight_layout()
-# plt.show()
+plt.show()
 

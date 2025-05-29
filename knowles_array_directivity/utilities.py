@@ -52,6 +52,32 @@ def get_rms_from_fft(freqs, spectrum, **kwargs):
     root_mean_squared = np.sqrt(mean_sigsquared/(2*spectrum.size-1))
     return root_mean_squared
 
+def correct_rms(X, fs):
+    '''
+    Estimates the RMS spectrum from a sine sweep or any signal.
+
+    Parameters
+    ----------
+    X : np.array
+        Time-domain audio signal
+    fs : int
+        Sampling rate in Hz
+
+    Returns 
+    -------
+    fftfreqs : np.array
+        Frequency bins from the RFFT
+    rms_spectrum : np.array
+        RMS (magnitude) value per frequency bin
+    '''
+    N = int(2**np.ceil(np.log2(len(X))))  # zero-padding to next power of 2
+    rfft = np.fft.rfft(X, n=N)
+    fftfreqs = np.fft.rfftfreq(N, 1/fs)
+
+    # Calculate magnitude (RMS of a sine wave in FFT = |X(f)| / sqrt(2))
+    rms_spectrum = np.abs(rfft) / np.sqrt(2 * N)
+
+    return fftfreqs, rms_spectrum
 
 def calc_native_freqwise_rms(X, fs):
     '''
@@ -72,8 +98,8 @@ def calc_native_freqwise_rms(X, fs):
         fftfreqs holds the frequency bins from the RFFT
         freqwise_rms is the RMS value of each frequency bin. 
     '''
-    rfft = np.fft.rfft(X)
-    fftfreqs = np.fft.rfftfreq(X.size, 1/fs)
+    rfft = np.fft.rfft(X, int(2**np.ceil(np.log2(len(X)))))
+    fftfreqs = np.fft.rfftfreq(int(2**np.ceil(np.log2(len(X)))), 1/fs)
     # now calculate the rms per frequency-band
     freqwise_rms = []
     for each in rfft:
