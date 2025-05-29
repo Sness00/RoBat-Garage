@@ -15,7 +15,7 @@ if __name__ == "__main__":
     normalize = True
     # Load the data from yaml file
     files = os.listdir(os.path.join(general_dir, data_dir))
-    file_name = os.path.join(general_dir, data_dir  + files[16])
+    file_name = os.path.join(general_dir, data_dir  + files[40])
     with open(file_name, 'r') as f:
         try:
             data = yaml.safe_load(f)  # Use safe_load to avoid potential security issues
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     ax2.set_xticks(np.deg2rad([-80, -60, -40, -20, 0, 20, 40, 60, 80]))
     for label in ax2.get_xticklabels():
         label.set_fontsize(16) 
-    
+    ax2.legend()
     ax2.grid(True)
    
     plt.show()
