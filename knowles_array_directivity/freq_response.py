@@ -53,7 +53,7 @@ for i in range(8):
     mic_sensitivity = sennheiser_sensitivity / 10**(Pa_to_dBFS/20)
     ax2.plot(sennheiser_centrefreqs, 20*np.log10(mic_sensitivity), label=f'Mic {i+1}', linewidth=1.2)
 ax2.set_xlabel('Frequency [Hz]', fontsize=16)
-ax2.set_title('Knowles SPH0641LU4H-1 sensitivity', fontsize=20)
+ax2.set_title('Knowles SPH0641LU4H-1 sensitivity\nf$_C$$_K$=12.288 [MHz], V$_D$$_D$=3.3[V]', fontsize=20)
 ax2.set_ylabel('Sensitivity [dBFS]', fontsize=16)
 ax2.set_xlim(10e3, 96e3)
 ax2.grid(True)

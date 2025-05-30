@@ -15,7 +15,7 @@ if __name__ == "__main__":
     normalize = True
     # Load the data from yaml file
     files = os.listdir(os.path.join(general_dir, data_dir))
-    file_name = os.path.join(general_dir, data_dir  + files[40])
+    file_name = os.path.join(general_dir, data_dir  + files[1])
     with open(file_name, 'r') as f:
         try:
             data = yaml.safe_load(f)  # Use safe_load to avoid potential security issues

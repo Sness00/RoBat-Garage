@@ -73,7 +73,7 @@ mean_freq_response_dB = mean_freq_response_dB + dB_SPL_to_rms
 # plot the frequency response of the calibration signal
 plt.figure()
 plt.plot(xf, mean_freq_response_dB, color='black')
-plt.title('Senscomp Series 7000 Frequency Response', fontsize=20)
+plt.title('Senscomp Series 7000 Frequency Response, V$_D$$_C$=85 [V], V$_A$$_C$=25 [V rms]', fontsize=20)
 plt.fill_between(xf, mean_freq_response_dB, color='black', alpha=0.1)
 plt.xlabel('Frequency [Hz]', fontsize=16)
 plt.ylabel('SPL [dB] @ 1 [m] ref 20[$\\mu$Pa]', fontsize=16)
