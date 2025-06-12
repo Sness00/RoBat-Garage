@@ -10,7 +10,17 @@ def moving_average(data, window_size):
     return np.convolve(data, np.ones(window_size)/window_size, mode='same')
 
 # Load the substitution-calibration audio (calibration and target mic)
-plt.rcParams['text.usetex'] = True
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "serif",
+    "font.serif": ["Computer Modern Roman"],
+    "text.latex.preamble": r"""
+        \usepackage{lmodern}
+        \renewcommand{\rmdefault}{cmr}
+        \renewcommand{\sfdefault}{cmss}
+        \renewcommand{\ttdefault}{cmtt}
+    """
+})
 fs = sf.info('calibration/calibration_tone.wav').samplerate
 # Load the 1 Pa reference tone 
 gras_1Pa_tone = sf.read('calibration/calibration_tone.wav', start=int(fs*0.5),
@@ -37,7 +47,7 @@ gras_freqrms = moving_average(gras_freqrms, 32)
 gras_freqParms = gras_freqrms/rms_1Pa_tone # now the levels of each freq band in Pa_rms
 
 Pa_to_dBFS = -26
-fig2, ax2 = plt.subplots(1, 1, figsize=(8, 4))
+fig2, ax2 = plt.subplots(1, 1, figsize=(10, 4))
 for i in range(8):
 # inside the loop
     audio_files = os.listdir('calibration/mic_' + str(i+1))
@@ -52,13 +62,16 @@ for i in range(8):
     sennheiser_sensitivity = np.array(sennheiser_freqrms)/np.array(gras_freqParms)
     mic_sensitivity = sennheiser_sensitivity / 10**(Pa_to_dBFS/20)
     ax2.plot(sennheiser_centrefreqs, 20*np.log10(mic_sensitivity), label=f'Mic {i+1}', linewidth=1.2)
-ax2.set_xlabel('Frequency [Hz]', fontsize=16)
+ax2.set_xlabel('Frequency [kHz]', fontsize=16)
 ax2.set_title('Knowles SPH0641LU4H-1 sensitivity\nf$_C$$_K$=12.288 [MHz], V$_D$$_D$=3.3[V]', fontsize=20)
 ax2.set_ylabel('Sensitivity [dBFS]', fontsize=16)
-ax2.set_xlim(10e3, 96e3)
+ax2.set_xlim(15e3, 96e3)
+ax2.set_xticks(ticks=[20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000],
+           labels=['20', '30', '40', '50', '60', '70', '80', '90'], fontsize=16)
 ax2.grid(True)
-ax2.legend(fontsize=16)
+ax2.legend(loc='center left', bbox_to_anchor=(1.02, 0.5), fontsize=16)
 plt.xticks(fontsize=16)
 plt.yticks(fontsize=16)
-plt.tight_layout()
-plt.show()
+plt.tight_layout(rect=[0, 0, 1, 1])  # Adjust the right margin to make space
+plt.savefig('mfr', dpi=1200, transparent=True)
+# plt.show()

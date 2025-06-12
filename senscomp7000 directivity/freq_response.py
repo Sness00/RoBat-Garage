@@ -29,8 +29,18 @@ def bandpass_rms(signal, fs, lowcut=950, highcut=1050, order=4):
 def moving_average(data, window_size):
     return np.convolve(data, np.ones(window_size)/window_size, mode='same')
 
-# use latex for the font in the plot
-plt.rcParams['text.usetex'] = True
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "serif",
+    "font.serif": ["Computer Modern Roman"],
+    "text.latex.preamble": r"""
+        \usepackage{lmodern}
+        \renewcommand{\rmdefault}{cmr}
+        \renewcommand{\sfdefault}{cmss}
+        \renewcommand{\ttdefault}{cmtt}
+    """
+})
+
 
 rec_dir = './gras_20250416/'
 sweeps_dir = 'sweeps_1/'
@@ -71,16 +81,17 @@ dB_SPL_to_rms = dB_SPL - 20*np.log10(bandpass_rms(calib_signal, fs, lowcut=950, 
 mean_freq_response_dB = mean_freq_response_dB + dB_SPL_to_rms
 
 # plot the frequency response of the calibration signal
-plt.figure()
+plt.figure(figsize=(10, 4))
 plt.plot(xf, mean_freq_response_dB, color='black')
 plt.title('Senscomp Series 7000 Frequency Response, V$_D$$_C$=85 [V], V$_A$$_C$=25 [V rms]', fontsize=20)
 plt.fill_between(xf, mean_freq_response_dB, color='black', alpha=0.1)
-plt.xlabel('Frequency [Hz]', fontsize=16)
+plt.xlabel('Frequency [kHz]', fontsize=16)
 plt.ylabel('SPL [dB] @ 1 [m] ref 20[$\\mu$Pa]', fontsize=16)
-plt.yticks([0, 20, 40, 60, 80], fontsize=16)
-plt.xticks([10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000], fontsize=16)
-plt.yticks(fontsize=16)
+plt.yticks([0, 20, 40, 60], fontsize=16)
+plt.xticks(ticks=[10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000],
+           labels=['10', '20', '30', '40', '50', '60', '70', '80', '90'], fontsize=16)
 plt.grid()
 plt.xlim(15000, 96000)
 plt.tight_layout()
+plt.savefig('tfr', dpi=1200, transparent=True)
 plt.show()

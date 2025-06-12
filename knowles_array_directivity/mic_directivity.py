@@ -23,7 +23,17 @@ def moving_average(data, window_size):
 
 if __name__ == '__main__':
     os.chdir(os.path.abspath(os.path.dirname(__file__)))
-    plt.rcParams['text.usetex'] = True
+    plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "serif",
+    "font.serif": ["Computer Modern Roman"],
+    "text.latex.preamble": r"""
+        \usepackage{lmodern}
+        \renewcommand{\rmdefault}{cmr}
+        \renewcommand{\sfdefault}{cmss}
+        \renewcommand{\ttdefault}{cmtt}
+    """
+})
     PREPROCESS = False
     SNR = False
     IN_BANDS = True
@@ -105,7 +115,7 @@ if __name__ == '__main__':
     NFFT = 2048
     theta = np.linspace(0, 350, 36)
     theta = np.append(theta, theta[0])
-    fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
+    # fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
     mean_radiances = np.zeros((8, 36, NFFT//2))
     for k in np.arange(8):
         radiances = []
@@ -121,9 +131,7 @@ if __name__ == '__main__':
             freqs = fft.fftfreq(NFFT, 1 / fs)
             freqs = freqs[0:NFFT//2]
             Channels = np.abs(Channels[:, 0:NFFT//2])
-            for j in range(len(Channels)):
-                Channels[j, :] = moving_average(Channels[j, :], 32)
-            radiance = (Channels**2)
+            radiance = Channels
             radiances.append(radiance)
 
         radiances = np.array(radiances)
@@ -135,42 +143,42 @@ if __name__ == '__main__':
         rad_patt_norm_dB = np.append(rad_patt_norm_dB, rad_patt_norm_dB[0])
 
     
-        ax.plot(np.deg2rad(theta), rad_patt_norm_dB, label='mic ' + str(k+1), linestyle=('--' if k==5 else '-'))
+        # ax.plot(np.deg2rad(theta), rad_patt_norm_dB, label='mic ' + str(k+1), linestyle=('--' if k==5 else '-'))
     # offset polar axes by -90 degrees
-    ax.set_theta_offset(np.pi / 2)
-    # set theta direction to clockwise
-    ax.set_theta_direction(-1)
-    # more theta ticks
-    ax.set_xticks(np.linspace(0, 2 * np.pi, 18, endpoint=False))
-    ax.set_ylabel("dB", labelpad=20, fontsize=16, y=0.5)
-    # less radial ticks
-    # ax.set_yticks(np.arange(-60, 0, 2), labels=[str(i) for i in np.arange(-60, 0, 2)], fontsize=5)
-    ax.set_rlabel_position(-90)
-    ax.set_ylim(-70, 1)
-    ax.yaxis.label.set_rotation(0)
-    ax.set_title('Knowles SPH0641LU4H-1 directivity', fontsize=20)
-    ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1), fontsize=16)
-    for label in ax.get_yticklabels():
-        label.set_fontsize(16)
-    for label in ax.get_xticklabels():
-        label.set_fontsize(16)
-    plt.tight_layout()
+    # ax.set_theta_offset(np.pi / 2)
+    # # set theta direction to clockwise
+    # ax.set_theta_direction(-1)
+    # # more theta ticks
+    # ax.set_xticks(np.linspace(0, 2 * np.pi, 18, endpoint=False))
+    # ax.set_ylabel("dB", labelpad=20, fontsize=16, y=0.5)
+    # # less radial ticks
+    # # ax.set_yticks(np.arange(-60, 0, 2), labels=[str(i) for i in np.arange(-60, 0, 2)], fontsize=5)
+    # ax.set_rlabel_position(-90)
+    # ax.set_ylim(-70, 1)
+    # ax.yaxis.label.set_rotation(0)
+    # ax.set_title('Knowles SPH0641LU4H-1 directivity', fontsize=20)
+    # ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1), fontsize=16)
+    # for label in ax.get_yticklabels():
+    #     label.set_fontsize(16)
+    # for label in ax.get_xticklabels():
+    #     label.set_fontsize(16)
+    # plt.tight_layout()
     # plt.show()
 
     if IN_BANDS:
         
         central_freq = np.array([20e3, 30e3, 40e3, 50e3, 60e3, 70e3, 80e3, 90e3])
         BW = 2e3
-        fig, ax1 = plt.subplots(4, 2, subplot_kw={"projection": "polar"}, figsize=(12, 16))
+        
 
-        plt.suptitle("Knowles SPH0641LU4H-1 Directivity", fontsize=20, y=1.02)
+        # plt.suptitle("Knowles SPH0641LU4H-1 Directivity", fontsize=20, y=1.02)
 
         # Store a line for each mic once (to use for global legend)
         legend_lines = []
         legend_labels = []
 
         for k in np.arange(len(central_freq)):
-            ax = ax1[k % 4, k // 4]
+            fig, ax = plt.subplots(subplot_kw={"projection": "polar"}, figsize=(6.5, 8))
             for j in np.arange(8):
                 rad_patt = np.mean(
                     mean_radiances[j, :, (freqs < central_freq[k] + BW) & (freqs > central_freq[k] - BW)],
@@ -192,26 +200,31 @@ if __name__ == '__main__':
                     legend_lines.append(line)
                     legend_labels.append('Mic ' + str(j + 1))
 
-            ax.set_title(f"{int(central_freq[k]/1000)} kHz", fontsize=12, pad=10)
+            ax.set_title(f"{int(central_freq[k]/1000)} [kHz]", fontsize=16, pad=10)
             ax.set_theta_offset(np.pi / 2)
             ax.set_theta_direction(-1)
             ax.set_xticks(np.linspace(0, 2 * np.pi, 18, endpoint=False))
-            ax.set_yticks(np.linspace(-60, 0, 5))
+            ax.set_yticks(np.linspace(-30, 0, 6))
             ax.set_rlabel_position(-90)
+            ax.tick_params(axis='y', labelsize=16)
+            ax.tick_params(axis='x', labelsize=16)
+            ax.set_ylabel("dB", fontdict={'fontsize': 16}, labelpad=30)
+            ax.yaxis.label.set_rotation(0)
 
         # Adjust layout
-        plt.tight_layout(pad=4.0)
-        fig.subplots_adjust(top=0.9, hspace=0.4, wspace=0.6, bottom=0.1)
+            plt.tight_layout(rect=[0, 0, 1, 1])
+            # fig.subplots_adjust(top=0.9, hspace=0.4, wspace=0.6, bottom=0.1)
 
-        # Add a global legend below all subplots
-        fig.legend(
-            handles=legend_lines,
-            labels=legend_labels,
-            loc='lower center',
-            ncol=4,
-            fontsize=10,
-            frameon=False,
-            bbox_to_anchor=(0.5, 0.02)
-        )
-    plt.tight_layout()
+            # Add a global legend below all subplots
+            fig.legend(
+                handles=legend_lines,
+                labels=legend_labels,
+                loc='lower center',
+                ncol=4,
+                fontsize=16,
+                frameon=True,
+                bbox_to_anchor=(0.5, 0)
+                )
+            plt.savefig(f'm{int(central_freq[k]/1000)}', dpi=600, transparent=True)
+        # plt.tight_layout()
     plt.show()

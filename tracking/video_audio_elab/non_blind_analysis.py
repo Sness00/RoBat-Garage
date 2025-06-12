@@ -164,7 +164,7 @@ reading_points = np.array(reading_points)
 offsets = data['offsets']
 offsets = np.array(offsets)
 
-video_fps = 60
+gopro_fps = 60
 screen_width, screen_height = pag.size()
 robot_id = 0
 arena_w = 1.55
@@ -196,9 +196,9 @@ try:
 
     xcorr = np.roll(signal.correlate(camera_audio, robot_audio, mode='same'), -len(robot_audio) // 2)
     index = np.argmax(np.abs(xcorr))
-    start_frame = int(index / sr * video_fps)
+    start_frame = int(index / sr * gopro_fps)
     print('Start frame: %d' % start_frame)
-    video_frames = np.astype((reading_points) / fs * video_fps + start_frame, np.int32)
+    video_frames = np.astype((reading_points) / fs * gopro_fps + start_frame, np.int32)
     interp_video_frames = np.astype(insert_between_large_diffs(video_frames), np.int32)
 
     fs = 176400
@@ -300,7 +300,7 @@ cap = cv2.VideoCapture(video_path)
 frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-video_fps = 25
+video_fps = 30
 output_dir = './output/'
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
@@ -366,7 +366,7 @@ try:
                         obstacles, distances = shift_toward_point(obst_centers, mic_positions, 3.2, pixel_per_meters/100)
                         min_angle_error = np.inf
                         min_distance_error = np.inf
-                        min_err = min_angle_error + min_distance_error
+                        min_err = np.sqrt(min_angle_error**2 + min_distance_error**2)
                         if len(distances) > 0:
                             D41 = tl - bl
                             D14 = bl - tl
@@ -379,8 +379,10 @@ try:
                                 cross_product = cross2d(V_marker_space, D14)
                                 verse = -1 if cross_product > 0 else 1
                                 angle = verse*np.arccos(dot_product / (np.linalg.norm(V_marker_space)))
+                                if np.abs(angle) > np.pi/2:
+                                    continue
                                 # draw a line from the robot to the closest obstacle
-                                if (np.abs(np.rad2deg(angle) - doa) + np.abs(sd - distance) < min_err):               
+                                if (np.sqrt(np.abs(np.rad2deg(angle) - doa)**2 + np.abs(sd - distance)**2) < min_err):               
                                     closest_obstacle = np.squeeze(obstacles[np.where(distances == sd)])
                                     min_angle_error = np.abs(np.rad2deg(angle) - doa)
                                     min_distance_error = np.abs(sd - distance)
@@ -391,7 +393,7 @@ try:
                             if found_nearest:
                                 # print distance and angle                                
                                 
-                                # print('Time: %.1f [s]' % (frame_count/video_fps))
+                                print('Time: %.1f [s]\n' % (frame_count/gopro_fps))
                                 # print("Distance: %.1f [cm], Angle: %.1f [deg]" % (distance, doa))
                                 # print("GT Distance: %.1f [cm], GT Angle: %.1f [deg]\n" % (sd, np.rad2deg(angle)))
                                 obst_distances.append(ind_obst_distance)
