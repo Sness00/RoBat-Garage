@@ -81,17 +81,19 @@ distance_errors = np.array(distance_errors)
 obst_angles = np.array(obst_angles)
 angle_errors = np.array(angle_errors)
 
-distance_errors[(obst_distances > 100) | (obst_distances < 12.5)] = np.nan
-obst_distances[(obst_distances > 100) | (obst_distances < 12.5)] = np.nan
-obst_distances[(distance_errors > 10) | (distance_errors < -10)] = np.nan
-distance_errors[(distance_errors > 10) | (distance_errors < -10)] = np.nan
-obst_angles[distance_errors == np.nan] = np.nan
-angle_errors[distance_errors == np.nan] = np.nan
-distance_errors = distance_errors[~ np.isnan(obst_distances)]
-obst_angles = obst_angles[~ np.isnan(obst_distances)]
-angle_errors = angle_errors[~ np.isnan(obst_distances)]
-obst_distances = obst_distances[~ np.isnan(obst_distances)]
-print(f"Number of data points after outliers elimination: {len(obst_distances)}")
+correct = True
+if correct:
+    distance_errors[(obst_distances > 100) | (obst_distances < 12.5)] = np.nan
+    obst_distances[(obst_distances > 100) | (obst_distances < 12.5)] = np.nan
+    obst_distances[(distance_errors > 10) | (distance_errors < -10)] = np.nan
+    distance_errors[(distance_errors > 10) | (distance_errors < -10)] = np.nan
+    obst_angles[distance_errors == np.nan] = np.nan
+    angle_errors[distance_errors == np.nan] = np.nan
+    distance_errors = distance_errors[~ np.isnan(obst_distances)]
+    obst_angles = obst_angles[~ np.isnan(obst_distances)]
+    angle_errors = angle_errors[~ np.isnan(obst_distances)]
+    obst_distances = obst_distances[~ np.isnan(obst_distances)]
+    print(f"Number of data points after outliers elimination: {len(obst_distances)}")
 
 
 dst_err_mean = np.mean(distance_errors)
