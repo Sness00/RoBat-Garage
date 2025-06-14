@@ -5,13 +5,31 @@ from matplotlib import pyplot as plt
 from matplotlib.image import NonUniformImage
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
+plt.rcParams.update({
+"text.usetex": True,
+"font.family": "serif",
+"font.serif": ["Computer Modern Roman"],
+"text.latex.preamble": r"""
+\usepackage{lmodern}
+\renewcommand{\rmdefault}{cmr}
+\renewcommand{\sfdefault}{cmss}
+\renewcommand{\ttdefault}{cmtt}
+""",
+    "font.size": 16,           # Set default font size
+    "axes.labelsize": 16,      # Axis label font size
+    "xtick.labelsize": 16,     # X tick label font size
+    "ytick.labelsize": 16,     # Y tick label font size
+    "legend.fontsize": 16,     # Legend font size
+    "axes.titlesize": 16       # Title font size
+})
+
 
 data_dir = './trajectories/'
-obst_pos_dir = './analysis/'
+obst_pos_dir = './obst_positions/'
 file_names = os.listdir(data_dir)
 obst_pos_files = os.listdir(obst_pos_dir)
 
-group_indexes = [0, 3, 5, 7, -1]
+group_indexes = [0, 2, 4, 6, -1]
 with open(data_dir + 'conversion_factors.yaml', 'r') as file:
     try:
         data = yaml.safe_load(file)  # Use safe_load to avoid potential security issues
@@ -19,18 +37,19 @@ with open(data_dir + 'conversion_factors.yaml', 'r') as file:
         print(f"Error loading YAML file: {error}")
 pixel_per_meter = np.array(data['pixel_to_meters'])
 bottle_radius = 3.2e-2 # [m]
-fig = plt.figure()
+
 for i in range(len(group_indexes) - 1):
-    with open(obst_pos_dir + obst_pos_files[group_indexes[i]], 'r') as file:
-            try:
-                pos_data = yaml.safe_load(file)  # Use safe_load to avoid potential security issues
-            except yaml.YAMLError as error:
-                print(f"Error loading YAML file: {error}")
     trajectory = np.empty((0, 2))
+    obst_positions = np.zeros((11, 2))
     for j, f in enumerate(file_names[group_indexes[i]:group_indexes[i+1]]):
         with open(data_dir + f, 'r') as file:
             try:
                 data = yaml.safe_load(file)  # Use safe_load to avoid potential security issues
+            except yaml.YAMLError as error:
+                print(f"Error loading YAML file: {error}")
+        with open(obst_pos_dir + obst_pos_files[j + group_indexes[i]], 'r') as file:
+            try:
+                pos_data = yaml.safe_load(file)  # Use safe_load to avoid potential security issues
             except yaml.YAMLError as error:
                 print(f"Error loading YAML file: {error}")
         traj = np.array(data['trajectory'])
@@ -40,10 +59,12 @@ for i in range(len(group_indexes) - 1):
         traj[:, 1] -= norm_y  # Normalize y-coordinates
         traj /= pixel_per_meter[j + group_indexes[i]]  # Convert to meters
         trajectory = np.vstack((trajectory, traj))   
-    obst_positions = np.array(pos_data['obstacles_positions'])
-    obst_positions[:, 0] -= norm_x
-    obst_positions[:, 1] -= norm_y
-    obst_positions /= pixel_per_meter[group_indexes[i]]
+        pos = np.array(pos_data['obstacles_position'])
+        pos[:, 0] -= norm_x
+        pos[:, 1] -= norm_y
+        pos /= pixel_per_meter[j + group_indexes[i]]
+        obst_positions += pos
+    obst_positions /= j + 1  # Average obstacle positions
     # obst_positions = np.flipud(obst_positions)
     # bottle_radius_pixels = bottle_radius * pixel_per_meter
     xedges = int((max(trajectory[:, 0]) - min(trajectory[:, 0]))/bottle_radius)
@@ -51,24 +72,24 @@ for i in range(len(group_indexes) - 1):
     yedges = int((max(trajectory[:, 1]) - min(trajectory[:, 1]))/bottle_radius)
 
     H, xedges, yedges = np.histogram2d(trajectory[:, 0], trajectory[:, 1], bins=[xedges, yedges])
-    H[H > 20] = 20
-    # Normalize the histogram
-    # H = H / np.sum(H) if np.sum(H) > 0 else H  # Avoid division by zero
-    # flip the histogram to match the orientation of the trajectory
     H = H.T
     H = np.flipud(H)
-    ax = fig.add_subplot(2, 3, i+1, aspect='equal')
+    fig = plt.figure(figsize=(6, 6))
+    ax = fig.add_subplot(aspect='equal')
     X, Y = np.meshgrid(xedges, yedges)
-    mesh = ax.pcolormesh(X, Y, H)
-    fig.colorbar(mesh, ax=ax, orientation='horizontal')    
-    ax.scatter(obst_positions[:, 0], max(trajectory[:, 1]) - obst_positions[:, 1], 100, 'r', '+')
+    mesh = ax.pcolormesh(X, Y, H, cmap='plasma', vmax=30)
+    cbar = fig.colorbar(mesh, ax=ax, orientation='vertical', shrink=0.5)
+    cbar.set_label('Number of visits')
+    ax.scatter(obst_positions[:, 0], max(trajectory[:, 1]) - obst_positions[:, 1], 100, 'lime', 'o', label='Obstacles')
     ax.set_title(f'Configuration {i+1}')
     ax.set_xlabel('X [m]')
     ax.set_ylabel('Y [m]')
     ax.set_xlim(0, 2)
     ax.set_ylim(0, 1.55)
+    # set legend outside the plot
+    ax.legend(loc='upper right', bbox_to_anchor=(0.4, -0.2))
     # ax.set_aspect('equal', adjustable='box')
-    
+    plt.savefig(f'./obst_{i+1}.png', dpi=600, transparent=True)
 
 data_dir = './trajectories_control/'
 file_names = os.listdir(data_dir)
@@ -95,23 +116,21 @@ for k, f in enumerate(file_names[:-1]):
     yedges = int((max(trajectory[:, 1]) - min(trajectory[:, 1]))/bottle_radius)
 
     H, xedges, yedges = np.histogram2d(trajectory[:, 0], trajectory[:, 1], bins=[xedges, yedges])
-    H[H > 20] = 20
-    # Normalize the histogram
-    # H = H / np.sum(H) if np.sum(H) > 0 else H  # Avoid division by zero
-    # flip the histogram to match the orientation of the trajectory
     H = H.T
     H = np.flipud(H)
-    ax = fig.add_subplot(2, 3, k + i + 2, aspect='equal')
+    fig = plt.figure(figsize=(6, 6))
+    ax = fig.add_subplot(aspect='equal')
     X, Y = np.meshgrid(xedges, yedges)
-    mesh = ax.pcolormesh(X, Y, H)
-    fig.colorbar(mesh, ax=ax, orientation='horizontal') 
-    ax.set_title(f'No obstacles {k+1}')
+    mesh = ax.pcolormesh(X, Y, H, cmap='plasma', vmax=30)
+    cbar = fig.colorbar(mesh, ax=ax, orientation='vertical', shrink=0.5)
+    cbar.set_label('Number of visits')
+    ax.set_title(f'Control {k+1}')
     ax.set_xlabel('X [m]')
     ax.set_ylabel('Y [m]')
     ax.set_xlim(0, 2)
     ax.set_ylim(0, 1.55)
     # ax.set_aspect('equal', adjustable='box')
+    plt.savefig(f'./control_{k+1}.png', dpi=600, transparent=True)
 
 plt.tight_layout()
-plt.suptitle('Trajectory Heatmaps', fontsize=16)
-plt.show()
+# plt.show()

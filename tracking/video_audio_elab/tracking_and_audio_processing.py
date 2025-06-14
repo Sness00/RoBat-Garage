@@ -148,7 +148,7 @@ def pow_two_pad_and_window(vec, show=False):
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-file_name = '20250520_11-09-15'
+file_name = '20250516_15-59-38'
 
 camera_path = './videos/' + file_name + '.mp4'
 robot_path = './audio/' + file_name + '.wav'
@@ -164,7 +164,7 @@ reading_points = np.array(reading_points)
 offsets = data['offsets']
 offsets = np.array(offsets)
 
-video_fps = 60
+gopro_fps = 60
 screen_width, screen_height = pag.size()
 robot_id = 0
 arena_w = 1.55
@@ -196,9 +196,9 @@ try:
 
     xcorr = np.roll(signal.correlate(camera_audio, robot_audio, mode='same'), -len(robot_audio) // 2)
     index = np.argmax(np.abs(xcorr))
-    start_frame = int(index / sr * video_fps)
+    start_frame = int(index / sr * gopro_fps)
     print('Start frame: %d' % start_frame)
-    video_frames = np.astype((reading_points) / fs * video_fps + start_frame, np.int32)
+    video_frames = np.astype((reading_points) / fs * gopro_fps + start_frame, np.int32)
     interp_video_frames = np.astype(insert_between_large_diffs(video_frames), np.int32)
 
     fs = 176400
@@ -300,7 +300,7 @@ cap = cv2.VideoCapture(video_path)
 frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-video_fps = 25
+video_fps = 30
 output_dir = './blind_output/'
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
@@ -359,12 +359,15 @@ try:
                         mic_positions = np.astype(get_offset_point(center, tl, tr, offset=-pixel_per_meters*0.07), np.int32)                       
 
                         obst_ids = ids[mask]
+                        indexes = np.argsort(obst_ids, axis=0)
                         obst_corners = corners_array[mask]
-
                         obst_centers = np.mean(obst_corners, axis=1)
                         if (len(obst_centers) == 11 and not all_obstacles):
                             all_obstacles = True
-                            obst_list = np.array(obst_centers).tolist()
+                            print(obst_centers)
+                            obst_pos = np.squeeze(obst_centers.copy())[indexes]
+                            print(obst_pos)
+                            obst_list = np.squeeze(obst_pos).tolist()
                             print('Position of all obstacles retrieved')
                         obstacles, distances = shift_toward_point(obst_centers, mic_positions, 3.2, pixel_per_meters/100)
                         if len(distances) > 0:
@@ -421,15 +424,23 @@ except Exception as e:
     print(frame_count, e)
     traceback.print_exc()
 # cv2.imwrite(file_name + '.jpg', resized_frame)
+cap.release()
+out.release()
+cv2.destroyAllWindows()
 data = {
     'obstacle_distances': np.asarray(obst_distances).tolist(),
     'distance_errors': np.asarray(dist_error).tolist(),
     'obstacle_angles': np.asarray(doas).tolist(),
     'angle_errors': np.asarray(doa_error).tolist(),
-    'obstacles_positions': obst_list
 }
 with open('./analysis/' + file_name + '.yaml', "w") as f:
     yaml.dump(data, f)
-cap.release()
-out.release()
-cv2.destroyAllWindows()
+
+pos_dir = './obst_positions/'
+if not os.path.exists(pos_dir):
+    os.makedirs(pos_dir)
+pos_data = {
+    'obstacles_position': obst_list
+}
+with open(pos_dir + file_name + '.yaml', "w") as f:
+    yaml.dump(pos_data, f)
