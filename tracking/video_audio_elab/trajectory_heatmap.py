@@ -2,7 +2,7 @@ import os
 import yaml
 import numpy as np
 from matplotlib import pyplot as plt
-from matplotlib.image import NonUniformImage
+from scipy.spatial import Voronoi, voronoi_plot_2d
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 plt.rcParams.update({
@@ -65,6 +65,20 @@ for i in range(len(group_indexes) - 1):
         pos /= pixel_per_meter[j + group_indexes[i]]
         obst_positions += pos
     obst_positions /= j + 1  # Average obstacle positions
+    obst_positions[:, 1] = max(trajectory[:, 1]) - obst_positions[:, 1]
+    vor = Voronoi(obst_positions)
+    # fig, ax = plt.subplots(figsize=(6, 6))
+    # plt.xlim(0, 2)
+    # plt.ylim(0, 1.55)
+    # plt.xlabel('X [m]')
+    # plt.ylabel('Y [m]')
+    # plt.gca().set_aspect('equal', adjustable='box')
+    # plt.grid(False)
+    # plt.scatter(obst_positions[:, 0], obst_positions[:, 1], 100, 'lime', 'o', label='Obstacles')
+    # # plt.legend(loc='upper right', bbox_to_anchor=(0.4, -0.1))
+    # plt.tight_layout()
+    # plt.title(f'Voronoi Diagram for Obstacles - Configuration {labels[i]}')
+    # plt.savefig(f'./voronoi_{i+1}.png', dpi=600, transparent=True)
     # obst_positions = np.flipud(obst_positions)
     # bottle_radius_pixels = bottle_radius * pixel_per_meter
     xedges = int((max(trajectory[:, 0]) - min(trajectory[:, 0]))/bottle_radius)
@@ -74,21 +88,22 @@ for i in range(len(group_indexes) - 1):
     H, xedges, yedges = np.histogram2d(trajectory[:, 0], trajectory[:, 1], bins=[xedges, yedges])
     H = H.T
     H = np.flipud(H)
-    fig = plt.figure(figsize=(6, 6))
+    fig = plt.figure(figsize=(6, 4))
     ax = fig.add_subplot(aspect='equal')
     X, Y = np.meshgrid(xedges, yedges)
     mesh = ax.pcolormesh(X, Y, H, cmap='plasma', vmax=30)
     cbar = fig.colorbar(mesh, ax=ax, orientation='vertical', shrink=0.5)
     cbar.set_label('Number of visits')
-    ax.scatter(obst_positions[:, 0], max(trajectory[:, 1]) - obst_positions[:, 1], 100, 'lime', 'o', label='Obstacles')
+    ax.scatter(obst_positions[:, 0], obst_positions[:, 1], 100, 'lime', 'o', label='Obstacles')
+    voronoi_plot_2d(vor, ax, show_vertices=False, show_points=False, line_colors='c', line_width=1.5, line_alpha=1, line_style='--')
     ax.set_title('Configuration' + f' {labels[i]}')
     ax.set_xlabel('X [m]')
     ax.set_ylabel('Y [m]')
     ax.set_xlim(0, 2)
     ax.set_ylim(0, 1.55)
     # set legend outside the plot
-    ax.legend(loc='upper right', bbox_to_anchor=(0.4, -0.2))
-    # ax.set_aspect('equal', adjustable='box')
+    # ax.legend(loc='upper right', bbox_to_anchor=(0.4, -0.2))
+    ax.set_aspect('equal', adjustable='box')
     plt.savefig(f'./obst_{i+1}.png', dpi=600, transparent=True)
 
 data_dir = './trajectories_control/'
@@ -118,7 +133,7 @@ for k, f in enumerate(file_names[:-1]):
     H, xedges, yedges = np.histogram2d(trajectory[:, 0], trajectory[:, 1], bins=[xedges, yedges])
     H = H.T
     H = np.flipud(H)
-    fig = plt.figure(figsize=(6, 6))
+    fig = plt.figure(figsize=(6, 4))
     ax = fig.add_subplot(aspect='equal')
     X, Y = np.meshgrid(xedges, yedges)
     mesh = ax.pcolormesh(X, Y, H, cmap='plasma', vmax=30)
@@ -129,7 +144,7 @@ for k, f in enumerate(file_names[:-1]):
     ax.set_ylabel('Y [m]')
     ax.set_xlim(0, 2)
     ax.set_ylim(0, 1.55)
-    # ax.set_aspect('equal', adjustable='box')
+    ax.set_aspect('equal', adjustable='box')
     plt.savefig(f'./control_{k+1}.png', dpi=600, transparent=True)
 
 plt.tight_layout()
