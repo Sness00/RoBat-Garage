@@ -25,12 +25,12 @@ if __name__ == "__main__":
 })
     os.chdir(os.path.abspath(os.path.dirname(__file__)))
     # Set the path to the directory containing the .npy files
-    multisource = True
+    multisource = False
     general_dir = 'doa_data'
     if multisource:
         general_dir += '_multisource'
     data_dir = 'pseudospectra/'
-    normalize = False
+    normalize = True
     # Load the data from yaml file
     file_no = int(input('File number: ')) # 9 - 28 - 47
     files = os.listdir(os.path.join(general_dir, data_dir))
@@ -76,6 +76,7 @@ if __name__ == "__main__":
                 ax2.axhline(-3, linewidth=0.8, color='r')
                 ax2.text(-70, -2, '-3 [dB]', color='r')
                 ax2.set_xlim(-90, 90)
+                ax2.xaxis.set_inverted(True)
                 ax2.set_ylim(-24, 2)
                 ax2.set_xticks(np.linspace(-90, 90, 7))
                 ax2.set_xlabel('Angle [deg]')
@@ -106,4 +107,48 @@ if __name__ == "__main__":
         plt.tight_layout()
         ax2.legend(loc='lower left', bbox_to_anchor=(-1.34, -0.2))
         plt.savefig(str(file_no) + '_multi', dpi=600, transparent=True)
-        # plt.show()
+        plt.show()
+    else:
+        if (file_no in [9, 28, 47] and not multisource):
+            file_name = os.path.join(general_dir, data_dir  + files[file_no])
+            with open(file_name, 'r') as f:
+                try:
+                    data = yaml.safe_load(f)  # Use safe_load to avoid potential security issues
+                except yaml.YAMLError as error:
+                    print(error)
+            p_dB = np.array(data['p_dB'])
+            theta = np.array(data['theta'])
+            algo = files[file_no][:files[file_no].find('_')]
+            if algo == 'das':
+                title_algo = 'DAS'
+            elif algo == 'capon':
+                title_algo = 'Capon'
+            else:
+                title_algo = 'MUSIC'
+                p_dB /= 2
+            cs = CubicSpline(theta, p_dB)
+            theta_interp = np.arange(-90, 90, 0.1)
+            p_dB_interp = cs(theta_interp)
+            fig, ax2 = plt.subplots(figsize=(10, 4))
+            correction = theta_interp[np.argmax(p_dB_interp)]
+            p_dB_interp = cs(theta_interp + correction) - max(cs(theta_interp + correction))
+            if normalize:
+                p_dB_interp -= max(p_dB_interp)
+            m3dB = theta_interp[(p_dB_interp > -3.2) & (p_dB_interp < -2.8)]
+            ax2.plot(theta_interp, p_dB_interp, color='black', linewidth=1)
+            print(m3dB)
+            ax2.vlines([m3dB[0], m3dB[-1]], -30, -3.01, linestyles='--', colors='b')
+            ax2.axhline(-3, linewidth=0.8, color='r')
+            ax2.text(-70, -2, '-3 [dB]', color='r')
+            ax2.set_xlim(-90, 90)
+            ax2.xaxis.set_inverted(True)
+            ax2.set_ylim(-24, 2)
+            ax2.set_xticks(np.linspace(-90, 90, 7))
+            ax2.set_xlabel(r'$\theta$ [deg]')
+            ax2.set_ylabel('Magnitude [dB]')
+            ax2.set_title('p($\\theta$) - ' + title_algo)
+            if normalize:
+                ax2.set_yticks(np.arange(-20, 5, 5))
+            ax2.grid(True)
+            plt.tight_layout()
+            plt.savefig(title_algo, dpi=600, transparent=True)

@@ -65,7 +65,7 @@ for i in range(8):
     ax2.plot(sennheiser_centrefreqs, 20*np.log10(mic_sensitivity), label=f'Mic {i+1}', linewidth=1.2)
 ax2.set_xlabel('Frequency [kHz]', fontsize=16)
 ax2.set_title('Knowles SPH0641LU4H-1 Sensitivity\nf$_C$$_K$=12.288 [MHz], V$_D$$_D$=3.3[V]', fontsize=20)
-ax2.set_ylabel('Sensitivity [dB rms/Pa]', fontsize=16)
+ax2.set_ylabel('Sensitivity [dB RMS/Pa]', fontsize=16)
 ax2.set_xlim(15e3, 96e3)
 ax2.set_xticks(ticks=[20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000],
            labels=['20', '30', '40', '50', '60', '70', '80', '90'], fontsize=16)

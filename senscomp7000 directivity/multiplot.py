@@ -2,6 +2,7 @@ import os
 import soundfile
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.image import NonUniformImage
 from scipy import fft, signal
 
 def moving_average(data, window_size):
@@ -56,12 +57,12 @@ for i in np.arange(5):
 
 radiances = np.array(radiances)
 mean_radiance = np.mean(radiances, axis=0)
-
 theta = np.linspace(0, 350, 36)
 theta = np.append(theta, theta[0])
 
 freqs = fft.fftfreq(NFFT, 1 / fs)
 freqs = freqs[0:NFFT//2]
+
 
 if in_bands:
     central_freq = np.array([20e3, 30e3, 40e3, 50e3, 60e3, 70e3, 80e3, 90e3])
@@ -108,8 +109,8 @@ if in_bands:
         # plt.savefig(str(fc)[0:2], dpi=1200, transparent=True)
     plt.tight_layout(rect=[0, 0, 1, 1])
     plt.show()
-# # %%
-# # fig.savefig('radiation', transparent=True)
+# %%
+# fig.savefig('radiation', transparent=True)
 # # %% Mean radiance pattern display
 
 # rad_patt = np.mean(radiance, axis=1)
