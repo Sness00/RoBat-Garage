@@ -60,11 +60,12 @@ for i in range(8):
     sennheiser_freqrms = np.mean(np.array(freq_responses), axis=0)
     sennheiser_freqrms = moving_average(sennheiser_freqrms, 32)
     sennheiser_sensitivity = np.array(sennheiser_freqrms)/np.array(gras_freqParms)
-    mic_sensitivity = sennheiser_sensitivity / 10**(Pa_to_dBFS/20)
+    # mic_sensitivity = sennheiser_sensitivity / 10**(Pa_to_dBFS/20)
+    mic_sensitivity = sennheiser_sensitivity
     ax2.plot(sennheiser_centrefreqs, 20*np.log10(mic_sensitivity), label=f'Mic {i+1}', linewidth=1.2)
 ax2.set_xlabel('Frequency [kHz]', fontsize=16)
-ax2.set_title('Knowles SPH0641LU4H-1 sensitivity\nf$_C$$_K$=12.288 [MHz], V$_D$$_D$=3.3[V]', fontsize=20)
-ax2.set_ylabel('Sensitivity [dBFS]', fontsize=16)
+ax2.set_title('Knowles SPH0641LU4H-1 Sensitivity\nf$_C$$_K$=12.288 [MHz], V$_D$$_D$=3.3[V]', fontsize=20)
+ax2.set_ylabel('Sensitivity [dB rms/Pa]', fontsize=16)
 ax2.set_xlim(15e3, 96e3)
 ax2.set_xticks(ticks=[20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000],
            labels=['20', '30', '40', '50', '60', '70', '80', '90'], fontsize=16)
@@ -73,5 +74,5 @@ ax2.legend(loc='center left', bbox_to_anchor=(1.02, 0.5), fontsize=16)
 plt.xticks(fontsize=16)
 plt.yticks(fontsize=16)
 plt.tight_layout(rect=[0, 0, 1, 1])  # Adjust the right margin to make space
-plt.savefig('mfr', dpi=1200, transparent=True)
+plt.savefig('mfr', dpi=600, transparent=True)
 # plt.show()

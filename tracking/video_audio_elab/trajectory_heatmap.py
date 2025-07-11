@@ -37,7 +37,7 @@ with open(data_dir + 'conversion_factors.yaml', 'r') as file:
         print(f"Error loading YAML file: {error}")
 pixel_per_meter = np.array(data['pixel_to_meters'])
 bottle_radius = 3.2e-2 # [m]
-
+labels = ['A', 'B', 'C', 'D']  # Labels for the configurations
 for i in range(len(group_indexes) - 1):
     trajectory = np.empty((0, 2))
     obst_positions = np.zeros((11, 2))
@@ -81,7 +81,7 @@ for i in range(len(group_indexes) - 1):
     cbar = fig.colorbar(mesh, ax=ax, orientation='vertical', shrink=0.5)
     cbar.set_label('Number of visits')
     ax.scatter(obst_positions[:, 0], max(trajectory[:, 1]) - obst_positions[:, 1], 100, 'lime', 'o', label='Obstacles')
-    ax.set_title(f'Configuration {i+1}')
+    ax.set_title('Configuration' + f' {labels[i]}')
     ax.set_xlabel('X [m]')
     ax.set_ylabel('Y [m]')
     ax.set_xlim(0, 2)
@@ -133,4 +133,4 @@ for k, f in enumerate(file_names[:-1]):
     plt.savefig(f'./control_{k+1}.png', dpi=600, transparent=True)
 
 plt.tight_layout()
-# plt.show()
+plt.show()

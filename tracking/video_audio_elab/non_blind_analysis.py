@@ -259,6 +259,7 @@ cap = cv2.VideoCapture(video_path)
 
 try:
     pixel_per_meters = 0
+    all_found = False
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
@@ -270,6 +271,12 @@ try:
         
         # Draw detected markers
         if ids is not None:
+            try:
+                index = np.where(ids == robot_id)[0] # Find the index of the robot marker
+                if len(index) == 0:
+                    raise ValueError('Robot marker not found')
+            except ValueError as e:
+                print('Robot marker not found')
             corners_array = np.squeeze(np.array(corners))
             try:
                 ind12 = np.where(ids == 12)[0]
@@ -287,14 +294,31 @@ try:
                 corners_14 = corners_array[ind14]
                 pixel_per_meters = np.mean([np.linalg.norm(corners_12[:, 3] - corners_13[:, 0], axis=1)/arena_w, np.linalg.norm(corners_13[:, 0] - corners_14[:, 1], axis=1)/arena_l])
                 print('Pixel per meters: %.2f' % pixel_per_meters)
+            
+                mask = np.ones(len(ids), dtype=bool)
+                mask[index] = False
+                if len(ind12) > 0:
+                    mask[ind12] = False
+                if len(ind13) > 0:
+                    mask[ind13] = False
+                if len(ind14) > 0:
+                    mask[ind14] = False
+                obst_ids = ids[mask]
+                if len(obst_ids) == 11:
+                    print('All markers found')
+                    all_found = True
+                if all_found:
+                    obst_corners = corners_array[mask]
+                    obst_centers = np.mean(obst_corners, axis=1)
             except ValueError:
                 print('Marker 12, 13 or 14 not found')
-        if pixel_per_meters > 0:
+        if pixel_per_meters > 0 and all_found:
             break
 except:
     print('Error reading video file:', e)
     sys.exit(1)
 cap.release()
+print(obst_centers)
 
 cap = cv2.VideoCapture(video_path)
 frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -344,24 +368,24 @@ try:
                     trajectory = np.append(trajectory, np.array([[center[0], center[1]]]), axis=0)
                     
                     if distance != 0:
-                        mask = np.ones(len(ids), dtype=bool)
-                        mask[index] = False
-                        ind12 = np.where(ids == 12)[0]
-                        if len(ind12) > 0:
-                            mask[ind12] = False
-                        ind13 = np.where(ids == 13)[0]
-                        if len(ind13) > 0:
-                            mask[ind13] = False
-                        ind14 = np.where(ids == 14)[0]
-                        if len(ind14) > 0:
-                            mask[ind14] = False                    
+                        # mask = np.ones(len(ids), dtype=bool)
+                        # mask[index] = False
+                        # ind12 = np.where(ids == 12)[0]
+                        # if len(ind12) > 0:
+                        #     mask[ind12] = False
+                        # ind13 = np.where(ids == 13)[0]
+                        # if len(ind13) > 0:
+                        #     mask[ind13] = False
+                        # ind14 = np.where(ids == 14)[0]
+                        # if len(ind14) > 0:
+                        #     mask[ind14] = False                    
                         tl, tr, br, bl = np.squeeze(corners_array[index])
                         mic_positions = np.astype(get_offset_point(center, tl, tr, offset=-pixel_per_meters*0.07), np.int32)                       
 
-                        obst_ids = ids[mask]
-                        obst_corners = corners_array[mask]
+                        # obst_ids = ids[mask]
+                        # obst_corners = corners_array[mask]
 
-                        obst_centers = np.mean(obst_corners, axis=1)
+                        # obst_centers = np.mean(obst_corners, axis=1)
 
                         obstacles, distances = shift_toward_point(obst_centers, mic_positions, 3.2, pixel_per_meters/100)
                         min_angle_error = np.inf
@@ -379,7 +403,7 @@ try:
                                 cross_product = cross2d(V_marker_space, D14)
                                 verse = -1 if cross_product > 0 else 1
                                 angle = verse*np.arccos(dot_product / (np.linalg.norm(V_marker_space)))
-                                if np.abs(angle) > np.pi/2:
+                                if np.abs(angle) > np.pi/2 or sd > 100:
                                     continue
                                 # draw a line from the robot to the closest obstacle
                                 if (np.sqrt(np.abs(np.rad2deg(angle) - doa)**2 + np.abs(sd - distance)**2) < min_err):               
