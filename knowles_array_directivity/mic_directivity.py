@@ -176,9 +176,11 @@ if __name__ == '__main__':
         # Store a line for each mic once (to use for global legend)
         legend_lines = []
         legend_labels = []
+        fig2, ax2 = plt.subplots(2, 4, figsize=(16, 10), subplot_kw={"projection": "polar"})
+        fig2.suptitle('Knowles SPH0641LU4H-1 Directivity Patterns', fontsize=20)
 
         for k in np.arange(len(central_freq)):
-            fig, ax = plt.subplots(subplot_kw={"projection": "polar"}, figsize=(6.5, 8))
+            # fig, ax = plt.subplots(subplot_kw={"projection": "polar"}, figsize=(6.5, 8))
             for j in np.arange(8):
                 rad_patt = np.mean(
                     mean_radiances[j, :, (freqs < central_freq[k] + BW) & (freqs > central_freq[k] - BW)],
@@ -188,43 +190,52 @@ if __name__ == '__main__':
                 rad_patt_norm_dB = 20 * np.log10(rad_patt_norm)
                 rad_patt_norm_dB = np.append(rad_patt_norm_dB, rad_patt_norm_dB[0])
 
-                line, = ax.plot(
-                    np.deg2rad(theta),
-                    rad_patt_norm_dB,
-                    label='Mic ' + str(j + 1),
-                    linestyle=('--' if j == 5 else '-')
+                # line, = ax.plot(
+                #     np.deg2rad(theta),
+                #     rad_patt_norm_dB,
+                #     label='Mic ' + str(j + 1),
+                #     linestyle=('--' if j == 5 else '-')
+                # )
+                line2, = ax2[int(k >= 4), k % 4].plot(
+                np.deg2rad(theta),
+                rad_patt_norm_dB,
+                label='Mic ' + str(j + 1),
+                linestyle=('--' if j == 5 else '-')
                 )
 
                 # Collect legend items only once (e.g., from the first plot)
                 if k == 0:
-                    legend_lines.append(line)
+                    legend_lines.append(line2)
                     legend_labels.append('Mic ' + str(j + 1))
 
-            ax.set_title(f"{int(central_freq[k]/1000)} [kHz]", fontsize=16, pad=10)
-            ax.set_theta_offset(np.pi / 2)
-            ax.set_theta_direction(-1)
-            ax.set_xticks(np.linspace(0, 2 * np.pi, 18, endpoint=False))
-            ax.set_yticks(np.linspace(-30, 0, 6))
-            ax.set_rlabel_position(-90)
-            ax.tick_params(axis='y', labelsize=16)
-            ax.tick_params(axis='x', labelsize=16)
-            ax.set_ylabel("dB", fontdict={'fontsize': 16}, labelpad=30)
-            ax.yaxis.label.set_rotation(0)
+            ax2[int(k >= 4), k % 4].set_title(f"{int(central_freq[k]/1000)} [kHz]", fontsize=16, pad=10)
+            ax2[int(k >= 4), k % 4].set_theta_offset(np.pi / 2)
+            ax2[int(k >= 4), k % 4].set_theta_direction(-1)
+            ax2[int(k >= 4), k % 4].set_xticks(np.linspace(0, 2 * np.pi, 18, endpoint=False))
+            ax2[int(k >= 4), k % 4].set_yticks(np.linspace(-40, 0, 5))
+            ax2[int(k >= 4), k % 4].set_ylim(-40, 0)
+            ax2[int(k >= 4), k % 4].set_rlabel_position(-90)
+            ax2[int(k >= 4), k % 4].tick_params(axis='y', labelsize=12)
+            ax2[int(k >= 4), k % 4].tick_params(axis='x', labelsize=12)
+            ax2[int(k >= 4), k % 4].set_ylabel("dB", fontdict={'fontsize': 14}, labelpad=30)
+            ax2[int(k >= 4), k % 4].yaxis.label.set_rotation(0)
 
         # Adjust layout
-            plt.tight_layout(rect=[0, 0, 1, 1])
+             # Increase pad for more space between rows
             # fig.subplots_adjust(top=0.9, hspace=0.4, wspace=0.6, bottom=0.1)
 
             # Add a global legend below all subplots
-            fig.legend(
+            fig2.legend(
                 handles=legend_lines,
                 labels=legend_labels,
                 loc='lower center',
-                ncol=4,
+                ncol=8,
                 fontsize=16,
                 frameon=True,
                 bbox_to_anchor=(0.5, 0)
                 )
-            plt.savefig(f'm{int(central_freq[k]/1000)}', dpi=600, transparent=True)
+            # plt.savefig(f'm{int(central_freq[k]/1000)}', dpi=600, transparent=True)
         # plt.tight_layout()
+    plt.tight_layout(rect=[0, 0, 1, 1], pad=2.5)
+    plt.savefig('mic_dir', dpi=600, transparent=True)
     plt.show()

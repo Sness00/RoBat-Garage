@@ -69,45 +69,64 @@ if in_bands:
     BW = 2e3
     i = 0
     k = 0
+    fig2, ax2 = plt.subplots(2, 4, figsize=(16, 8), subplot_kw={"projection": "polar"})
+    fig2.suptitle(
+        "Senscomp Series 7000 Transducer Radiance Patterns",
+        fontsize=20, fontweight='bold'
+    )
     for fc in central_freq:
-        fig, ax = plt.subplots(1, 1, subplot_kw={"projection": "polar"})
+        # fig, ax = plt.subplots(1, 1, subplot_kw={"projection": "polar"})
         rad_patt = np.mean(
             mean_radiance[:, (freqs < fc + BW) & (freqs > fc - BW)], axis=1
         )
         rad_patt_norm = rad_patt / np.max(rad_patt)
         rad_patt_norm_dB = 20 * np.log10(rad_patt_norm)
         rad_patt_norm_dB = np.append(rad_patt_norm_dB, rad_patt_norm_dB[0])
-        ax.plot(
-            np.deg2rad(theta),
-            rad_patt_norm_dB,
-            label=str(fc)[0:2] + " [kHz]",
-            linewidth=1.5,
-            color='k'
-        )
-    # ax1.legend(loc="upper right", bbox_to_anchor=(1.3, 1.2), fontsize=16)
-    # offset polar axes by -90 degrees
-        ax.set_theta_offset(np.pi / 2)
-    # set theta direction to clockwise
-        ax.set_theta_direction(-1)
-    # more theta ticks
-    # ax1.set_xticks(np.linspace(0, 2 * np.pi, 18, endpoint=False))
-        ax.set_yticks(np.linspace(-40, 0, 5))
-        ax.set_xticks(np.linspace(0, np.pi, 10))
-        ax.tick_params(axis='y', labelsize=16)
-        ax.tick_params(axis='x', labelsize=16)
-        ax.set_ylabel("dB", fontdict={'fontsize': 16})
-        ax.yaxis.label.set_rotation(0)
+    #     ax.plot(
+    #         np.deg2rad(theta),
+    #         rad_patt_norm_dB,
+    #         label=str(fc)[0:2] + " [kHz]",
+    #         linewidth=1.5,
+    #         color='k'
+    #     )
+    # # ax1.legend(loc="upper right", bbox_to_anchor=(1.3, 1.2), fontsize=16)
+    # # offset polar axes by -90 degrees
+    #     ax.set_theta_offset(np.pi / 2)
+    # # set theta direction to clockwise
+    #     ax.set_theta_direction(-1)
+    # # more theta ticks
+    # # ax1.set_xticks(np.linspace(0, 2 * np.pi, 18, endpoint=False))
+    #     ax.set_yticks(np.linspace(-40, 0, 5))
+    #     ax.set_xticks(np.linspace(0, np.pi, 10))
+    #     ax.tick_params(axis='y', labelsize=16)
+    #     ax.tick_params(axis='x', labelsize=16)
+    #     ax.set_ylabel("dB", fontdict={'fontsize': 16})
+    #     ax.yaxis.label.set_rotation(0)
     # less radial ticks
     # ax1.set_rlabel_position(100)
     # ax1.set_rlabel_position(-90)
-        ax.set_xlim(0, np.pi)
-        ax.set_title(str(fc)[0:2] + " [kHz]", fontsize=16, weight='bold')
+        # ax.set_xlim(0, np.pi)
+        # ax.set_title(str(fc)[0:2] + " [kHz]", fontsize=14, weight='bold')
+        ax2[int(i >= 4), i % 4].plot(np.deg2rad(theta), rad_patt_norm_dB, linewidth=1.5, color='k')
+        ax2[int(i >= 4), i % 4].set_xticks(np.linspace(0, np.pi, 10))
+        ax2[int(i >= 4), i % 4].set_yticks(np.linspace(-40, 0, 5))
+        ax2[int(i >= 4), i % 4].tick_params(axis='y', labelsize=14)
+        ax2[int(i >= 4), i % 4].tick_params(axis='x', labelsize=14)
+        ax2[int(i >= 4), i % 4].set_ylabel("dB", fontdict={'fontsize': 14})
+        ax2[int(i >= 4), i % 4].yaxis.label.set_rotation(0)
+        ax2[int(i >= 4), i % 4].set_xlim(0, np.pi)
+        ax2[int(i >= 4), i % 4].set_title(str(fc)[0:2] + " [kHz]", fontsize=16)
+        ax2[int(i >= 4), i % 4].set_theta_offset(np.pi / 2)
+        ax2[int(i >= 4), i % 4].set_theta_direction(-1)
+        i += 1
+
     # ax2.plot([])
     # ax2.plot([])
     # ax2.plot([])
     # ax2.plot([])
         # plt.savefig(str(fc)[0:2], dpi=1200, transparent=True)
     plt.tight_layout(rect=[0, 0, 1, 1])
+    plt.savefig('radiance_bands', dpi=600, transparent=True)
     plt.show()
 # %%
 # fig.savefig('radiation', transparent=True)
